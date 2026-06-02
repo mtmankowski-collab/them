@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=Marcellus&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+
+:root {
+  --cream:        #F8F7F2;
+  --cream-warm:   #F2EFE6;
+  --surface:      #FFFDF8;
+  --surface-2:    #FBF9F3;
+  --ink:          #2A2622;
+  --ink-2:        #6B6258;
+  --ink-3:        #A89F90;
+  --a:            #C4703A;
+  --a-deep:       #A85A2B;
+  --a-soft:       #F0DDCD;
+  --a-soft-2:     #E6C9B2;
+  --b:            #5E7459;
+  --b-deep:       #47583F;
+  --b-soft:       #DCE2D4;
+  --b-soft-2:     #C5D0BA;
+  --shared:       #2A2622;
+  --shared-soft:  #E7E2D8;
+  --line:         #ECE6DA;
+  --line-strong:  #DCD4C5;
+  --paid:         #5E7459;
+  --due:          #C4703A;
+  --overdue:      #B6543F;
+  --star:         #C4703A;
+  --font-serif:   'Bodoni Moda', Georgia, serif;
+  --font-serif-alt:'Marcellus', Georgia, serif;
+  --font-sans:    'Space Grotesk', system-ui, sans-serif;
+  --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-xl: 28px; --r-pill: 999px;
+  --sh-1: 0 1px 2px rgba(42,38,34,.05), 0 2px 8px rgba(42,38,34,.04);
+  --sh-2: 0 2px 6px rgba(42,38,34,.07), 0 10px 28px rgba(42,38,34,.06);
+  --sh-3: 0 8px 24px rgba(42,38,34,.12), 0 24px 56px rgba(42,38,34,.10);
+  --nav-h: 76px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+
+.theme-dark {
+  --cream:      #1A1A1A;
+  --cream-warm: #161514;
+  --surface:    #242220;
+  --surface-2:  #2E2B28;
+  --ink:        #F3EFE7;
+  --ink-2:      #A9A296;
+  --ink-3:      #6F685E;
+  --line:       #322E2A;
+  --line-strong:#403B35;
+  --a-soft:     #3A2A1E;
+  --b-soft:     #2A3223;
+  --shared-soft:#322E2A;
+  --a:          #D98A5A;
+  --b:          #8AA083;
+  --sh-1: 0 1px 2px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.25);
+  --sh-2: 0 2px 6px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.3);
+  --sh-3: 0 8px 24px rgba(0,0,0,.45), 0 24px 56px rgba(0,0,0,.4);
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+
+.screen {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 18px calc(var(--nav-h) + var(--safe-b) + 20px);
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen-full {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bottomnav {
+  display: flex;
+  height: var(--nav-h);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding-bottom: var(--safe-b);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.navitem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding-bottom: 2px;
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.navdot {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--a);
+}
+
+@keyframes them-shake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-9px)}
+  40%{transform:translateX(8px)}
+  60%{transform:translateX(-6px)}
+  80%{transform:translateX(4px)}
+}
+
+@keyframes them-fade { from{opacity:0} to{opacity:1} }
+@keyframes them-slideup { from{transform:translateY(100%)} to{transform:translateY(0)} }
