@@ -1,253 +1,234 @@
-import { useState, useEffect, useRef } from 'react'
-import { supabase } from '../lib/supabase'
-import {
-  IconSend, IconPlus, IconCheck, IconShoppingCart
-} from '@tabler/icons-react'
+import { useState, useEffect } from 'react'
+import Icon from '../components/Icon'
+import { Avatar, PersonDot, Label, Card, Segmented, SectionTitle } from '../components/ui'
+import { supabase, personColor, PEOPLE } from '../lib/supabase'
 
-const OWNER_COLORS = { M: '#C4703A', A: '#378ADD', shared: '#7D9B7A' }
-const OWNER_LABELS = { M: 'Mańka', A: 'Ani', shared: 'Wspólne' }
+const SERIF = "'Bodoni Moda', Georgia, serif"
+const MONTH_NAMES = ['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia']
+const DAY_NAMES = ['Niedziela','Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota']
 
-function formatTime(t) {
-  if (!t) return ''
-  return t.slice(0, 5)
-}
-
-function greet(name) {
-  const h = new Date().getHours()
-  if (h < 12) return `Dzień dobry, ${name}.`
-  if (h < 18) return `Cześć, ${name}.`
-  return `Dobry wieczór, ${name}.`
-}
-
-function formatDate() {
-  return new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })
-}
-
-export default function Today({ user }) {
+export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
+  const [span, setSpan] = useState('day')
   const [events, setEvents] = useState([])
-  const [board, setBoard] = useState([])
   const [shopping, setShopping] = useState([])
+  const [msgs, setMsgs] = useState([])
   const [expenses, setExpenses] = useState([])
   const [bills, setBills] = useState([])
-  const [message, setMessage] = useState('')
-  const boardRef = useRef(null)
 
-  const today = new Date().toISOString().slice(0, 10)
-  const thisMonth = new Date().toISOString().slice(0, 7)
+  const now = new Date()
+  const dayName = DAY_NAMES[now.getDay()]
+  const dateLabel = `${dayName}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`
+  const h = now.getHours()
+  const greeting = h < 12 ? 'Dzień dobry' : h < 18 ? 'Dobry wieczór' : 'Dobranoc'
 
   useEffect(() => {
-    loadData()
-    const channel = supabase
-      .channel('board-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'board' }, payload => {
-        setBoard(prev => [...prev, payload.new])
-      })
-      .subscribe()
-    return () => supabase.removeChannel(channel)
+    const today = now.toISOString().split('T')[0]
+    supabase.from('events').select('*').eq('date', today).order('time_start').then(({ data }) => setEvents(data || []))
+    supabase.from('shopping').select('*').eq('done', false).order('created_at', { ascending: false }).limit(6).then(({ data }) => setShopping(data || []))
+    supabase.from('board').select('*').order('created_at', { ascending: false }).limit(3).then(({ data }) => {
+      if (data) setMsgs(data.reverse().map(m => ({ who: m.author, text: m.message, at: fmtTime(m.created_at) })))
+    })
+    supabase.from('expenses').select('*').order('created_at', { ascending: false }).limit(50).then(({ data }) => setExpenses(data || []))
+    supabase.from('bills').select('*').order('due_day').then(({ data }) => setBills(data || []))
   }, [])
 
-  useEffect(() => {
-    if (boardRef.current) boardRef.current.scrollTop = boardRef.current.scrollHeight
-  }, [board])
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`
+  const totalSpent = expenses.reduce((s, e) => s + (e.amount || 0), 0)
+  const totalDue = bills.filter(b => !(b.paid_months || []).includes(curMonth)).reduce((s, b) => s + (b.amount || 0), 0)
+  const spentA = expenses.filter(e => e.added_by === 'a').reduce((s, e) => s + e.amount, 0)
+  const spentB = expenses.filter(e => e.added_by === 'b').reduce((s, e) => s + e.amount, 0)
+  const total = spentA + spentB || 1
+  const pctA = Math.round(spentA / total * 100)
+  const pctB = 100 - pctA
 
-  async function loadData() {
-    const [evRes, boardRes, shopRes, expRes, billRes] = await Promise.all([
-      supabase.from('events').select('*').eq('date', today).order('time_start'),
-      supabase.from('board').select('*').order('created_at').limit(50),
-      supabase.from('shopping').select('*').eq('done', false).limit(5),
-      supabase.from('expenses').select('*').gte('date', thisMonth + '-01'),
-      supabase.from('bills').select('*'),
-    ])
-    if (!evRes.error) setEvents(evRes.data || [])
-    if (!boardRes.error) setBoard(boardRes.data || [])
-    if (!shopRes.error) setShopping(shopRes.data || [])
-    if (!expRes.error) setExpenses(expRes.data || [])
-    if (!billRes.error) setBills(billRes.data || [])
-  }
-
-  async function sendMessage() {
-    if (!message.trim()) return
-    await supabase.from('board').insert({ message: message.trim(), author: user.initials })
-    setMessage('')
-  }
-
-  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0)
-
-  const today_day = new Date().getDate()
-  const nextBill = bills
-    .filter(b => !b.paid_months?.includes(thisMonth))
-    .sort((a, b) => {
-      const da = a.due_day >= today_day ? a.due_day - today_day : 31 - today_day + a.due_day
-      const db = b.due_day >= today_day ? b.due_day - today_day : 31 - today_day + b.due_day
-      return da - db
-    })[0]
+  const nextUp = events[0]
 
   return (
-    <div className="page" style={{ padding: '20px 16px', paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + 24px)' }}>
-      {/* Powitanie */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, lineHeight: 1.2, marginBottom: 4 }}>{greet(user.name)}</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14, textTransform: 'capitalize' }}>{formatDate()}</p>
+    <div className="screen">
+      <div style={{ padding: '8px 0 18px' }}>
+        <Label style={{ marginBottom: 9 }}>{dateLabel}</Label>
+        <div style={{ font: `400 32px/1.05 ${SERIF}`, color: 'var(--ink)' }}>{greeting}</div>
       </div>
 
-      {/* Plan dnia */}
-      <Section title="Plan dnia">
-        {events.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14, padding: '4px 0' }}>Brak wydarzeń na dziś.</p>
-        ) : (
-          events.map(ev => (
-            <div key={ev.id} style={styles.eventRow}>
-              <div style={{ ...styles.eventDot, background: OWNER_COLORS[ev.owner] || OWNER_COLORS.shared }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={styles.eventTitle}>{ev.title}</div>
-                {ev.location && <div style={styles.eventSub}>{ev.location}</div>}
+      {nextUp ? (
+        <Card pad={0} style={{ overflow: 'hidden', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'stretch' }}>
+            <div style={{ width: 6, background: personColor(nextUp.owner) }} />
+            <div style={{ padding: '15px 16px', flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+                <Label style={{ whiteSpace: 'nowrap' }}>Teraz / najbliżej</Label>
+                <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{nextUp.time_start?.slice(0,5)}</span>
               </div>
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                {ev.time_start && <div style={styles.eventTime}>{formatTime(ev.time_start)}</div>}
-                <div style={{ ...styles.ownerChip, background: OWNER_COLORS[ev.owner] + '22', color: OWNER_COLORS[ev.owner] }}>
-                  {OWNER_LABELS[ev.owner] || ev.owner}
-                </div>
+              <div style={{ font: `500 19px/1.15 ${SERIF}`, color: 'var(--ink)', marginBottom: 6 }}>{nextUp.title}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <PersonDot who={nextUp.owner} />
+                <span style={{ font: '400 13px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{nextUp.location}</span>
               </div>
             </div>
-          ))
-        )}
-      </Section>
-
-      {/* Finanse */}
-      <Section title="Finanse">
-        <div style={styles.finRow}>
-          <div>
-            <div style={styles.finLabel}>Wydatki w {new Date().toLocaleDateString('pl-PL', { month: 'long' })}</div>
-            <div style={styles.finAmount}>{totalExpenses.toFixed(2)} zł</div>
           </div>
-          {nextBill && (
-            <div style={{ textAlign: 'right' }}>
-              <div style={styles.finLabel}>Najbliższa opłata</div>
-              <div style={styles.finAmount}>{nextBill.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{nextBill.amount} zł · {nextBill.due_day}. dnia</div>
-            </div>
-          )}
-        </div>
-      </Section>
+        </Card>
+      ) : (
+        <Card style={{ marginBottom: 14, textAlign: 'center', padding: '20px' }}>
+          <div style={{ font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Brak wydarzeń dziś — wolny dzień 🌿</div>
+        </Card>
+      )}
 
-      {/* Tablica */}
-      <div style={styles.boardCard}>
-        <div style={styles.boardHeader}>
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)' }}>Tablica</span>
-        </div>
-        <div ref={boardRef} style={styles.boardMessages}>
-          {board.length === 0 && (
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, textAlign: 'center', padding: '12px 0' }}>Zacznijcie rozmowę...</p>
-          )}
-          {board.map(m => {
-            const mine = m.author === user.initials
-            return (
-              <div key={m.id} style={{ ...styles.bubble, alignSelf: mine ? 'flex-end' : 'flex-start', background: mine ? 'var(--accent-m)' : 'rgba(255,255,255,0.12)' }}>
-                {!mine && <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 2 }}>{m.author}</span>}
-                <span style={{ fontSize: 14, color: '#fff' }}>{m.message}</span>
-              </div>
-            )
-          })}
-        </div>
-        <div style={styles.boardInput}>
-          <input
-            style={styles.boardField}
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            placeholder="Napisz coś..."
-            onKeyDown={e => e.key === 'Enter' && sendMessage()}
-          />
-          <button style={styles.sendBtn} onClick={sendMessage}>
-            <IconSend size={18} />
-          </button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 2px 11px', gap: 10 }}>
+        <div style={{ font: '500 13px/1 var(--font-sans)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-2)', whiteSpace: 'nowrap' }}>Plan</div>
+        <div style={{ width: 186 }}>
+          <Segmented value={span} onChange={setSpan} options={[{ value:'day', label:'Dzień' }, { value:'week', label:'Tydzień' }]} />
         </div>
       </div>
 
-      {/* Zakupy */}
-      <Section title={`Zakupy (${shopping.length})`}>
-        {shopping.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Lista pusta.</p>
-        ) : (
-          shopping.map(item => (
-            <div key={item.id} style={styles.shopItem}>
-              <IconShoppingCart size={14} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
-              <span style={{ fontSize: 14 }}>{item.title}</span>
+      {span === 'day' ? (
+        <Card style={{ marginBottom: 14 }}>
+          {events.length ? events.map((e, i) => (
+            <div key={e.id} style={{ display: 'flex', gap: 13, padding: '11px 0',
+              borderTop: i ? '1px solid var(--line)' : 'none', alignItems: 'center' }}>
+              <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)', width: 38, flexShrink: 0 }}>{e.time_start?.slice(0,5)}</span>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: personColor(e.owner), flexShrink: 0 }} />
+              <span style={{ flex: 1, font: '500 14.5px/1.25 var(--font-sans)', color: 'var(--ink)' }}>{e.title}</span>
+              <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>{e.location}</span>
             </div>
-          ))
+          )) : (
+            <div style={{ padding: '12px 0', font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-3)', textAlign: 'center' }}>
+              Brak wydarzeń dziś
+            </div>
+          )}
+        </Card>
+      ) : (
+        <WeekView />
+      )}
+
+      <SectionTitle title="Finanse w tym miesiącu" action="Szczegóły" onAction={onGoFinance} />
+      <Card style={{ marginBottom: 14 }} onClick={onGoFinance}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+          <div>
+            <Label style={{ marginBottom: 7 }}>Wydane razem</Label>
+            <div style={{ font: `500 26px/1 ${SERIF}`, color: 'var(--ink)' }}>
+              {totalSpent.toLocaleString('pl', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: 16, color: 'var(--ink-2)' }}>zł</span>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--due)' }}>{totalDue.toLocaleString('pl')} zł</div>
+            <div style={{ font: '400 11.5px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 4 }}>do zapłaty</div>
+          </div>
+        </div>
+        <div style={{ height: 8, borderRadius: 4, background: 'var(--cream-warm)', overflow: 'hidden', display: 'flex' }}>
+          <div style={{ width: pctA + '%', background: 'var(--a)' }} />
+          <div style={{ width: pctB + '%', background: 'var(--b)' }} />
+        </div>
+        <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
+          <Legend who="a" label={`Maniek ${spentA.toLocaleString('pl')} zł`} />
+          <Legend who="b" label={`Ula ${spentB.toLocaleString('pl')} zł`} />
+        </div>
+      </Card>
+
+      <SectionTitle title="Między nami" action="Otwórz" onAction={onGoChat} />
+      <Card onClick={onGoChat} pad={14} style={{ marginBottom: 14 }}>
+        {msgs.length ? msgs.map((m, i) => (
+          <div key={i} style={{ display: 'flex', gap: 9, padding: '5px 0', alignItems: 'flex-start' }}>
+            <Avatar who={m.who} size={26} />
+            <div style={{ flex: 1 }}>
+              <div style={{ font: '400 13.5px/1.4 var(--font-sans)', color: 'var(--ink)' }}>{m.text}</div>
+            </div>
+            <span style={{ font: '400 11px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 3 }}>{m.at}</span>
+          </div>
+        )) : (
+          <div style={{ font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Napiszcie do siebie coś miłego 💬</div>
         )}
-      </Section>
+        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 9, background: 'var(--cream-warm)',
+          borderRadius: 'var(--r-pill)', padding: '9px 14px', border: '1px solid var(--line)' }}>
+          <span style={{ flex: 1, font: '400 13px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Napisz wiadomość…</span>
+          <Icon name="send" size={17} color="var(--ink-2)" />
+        </div>
+      </Card>
+
+      <SectionTitle title="Lista zakupów" action="Wszystko" onAction={onGoShopping} />
+      <Card pad={14}>
+        {shopping.length ? shopping.slice(0,5).map((s, i) => (
+          <div key={s.id} style={{ display: 'flex', gap: 11, padding: '8px 0', alignItems: 'center',
+            borderTop: i ? '1px solid var(--line)' : 'none' }}>
+            <span style={{ width: 18, height: 18, borderRadius: 6, border: '1.5px solid var(--line-strong)', flexShrink: 0 }} />
+            <span style={{ flex: 1, font: '500 14px/1 var(--font-sans)', color: 'var(--ink)' }}>{s.title}</span>
+            <PersonDot who={s.added_by || 'shared'} size={7} />
+          </div>
+        )) : (
+          <div style={{ padding: '8px 0', font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Lista pusta 🎉</div>
+        )}
+      </Card>
     </div>
   )
 }
 
-function Section({ title, children }) {
+function WeekView() {
+  const [weekEvents, setWeekEvents] = useState([])
+  const now = new Date()
+
+  useEffect(() => {
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now)
+      d.setDate(d.getDate() + i)
+      days.push(d.toISOString().split('T')[0])
+    }
+    supabase.from('events').select('*')
+      .gte('date', days[0]).lte('date', days[6])
+      .order('date').order('time_start')
+      .then(({ data }) => setWeekEvents(data || []))
+  }, [])
+
+  const dayNames = ['Nd','Pn','Wt','Śr','Cz','Pt','So']
+  const days = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now)
+    d.setDate(d.getDate() + i)
+    const dateStr = d.toISOString().split('T')[0]
+    days.push({ d, dateStr, isToday: i === 0 })
+  }
+
   return (
-    <div className="card" style={{ marginBottom: 12 }}>
-      <div className="section-header" style={{ marginBottom: 10 }}>
-        <span className="section-title">{title}</span>
-      </div>
-      {children}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+      {days.map(({ d, dateStr, isToday }) => {
+        const items = weekEvents.filter(e => e.date === dateStr)
+        return (
+          <Card key={dateStr} pad={0} style={{ overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'stretch' }}>
+              <div style={{ width: 58, flexShrink: 0, background: isToday ? 'var(--ink)' : 'var(--cream-warm)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '12px 0', gap: 2 }}>
+                <span style={{ font: '500 11px/1 var(--font-sans)', letterSpacing: '.06em', textTransform: 'uppercase',
+                  color: isToday ? 'rgba(243,239,231,.7)' : 'var(--ink-3)' }}>{dayNames[d.getDay()]}</span>
+                <span style={{ font: `500 22px/1 'Bodoni Moda', Georgia, serif`, color: isToday ? 'var(--cream)' : 'var(--ink)' }}>{d.getDate()}</span>
+              </div>
+              <div style={{ flex: 1, padding: '10px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 56 }}>
+                {items.length ? items.map((ev, j) => (
+                  <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '3.5px 0' }}>
+                    <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--ink-2)', width: 34, flexShrink: 0 }}>{ev.time_start?.slice(0,5)}</span>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: personColor(ev.owner), flexShrink: 0 }} />
+                    <span style={{ flex: 1, font: '500 13.5px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{ev.title}</span>
+                  </div>
+                )) : (
+                  <span style={{ font: '400 13px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Wolny dzień</span>
+                )}
+              </div>
+            </div>
+          </Card>
+        )
+      })}
     </div>
   )
 }
 
-const styles = {
-  eventRow: { display: 'flex', alignItems: 'flex-start', gap: 10, paddingBottom: 10, marginBottom: 10, borderBottom: '0.5px solid var(--border)' },
-  eventDot: { width: 8, height: 8, borderRadius: '50%', marginTop: 5, flexShrink: 0 },
-  eventTitle: { fontSize: 14, fontWeight: 500, color: 'var(--text)' },
-  eventSub: { fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 },
-  eventTime: { fontSize: 13, fontWeight: 600, color: 'var(--text)' },
-  ownerChip: { fontSize: 10, fontWeight: 600, borderRadius: 4, padding: '2px 6px', marginTop: 2, display: 'inline-block' },
-  finRow: { display: 'flex', justifyContent: 'space-between', gap: 12 },
-  finLabel: { fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 },
-  finAmount: { fontSize: 20, fontFamily: "'DM Serif Display', serif" },
-  boardCard: {
-    background: '#1a1a2e',
-    borderRadius: 'var(--radius)',
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  boardHeader: { padding: '12px 16px 0' },
-  boardMessages: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    padding: '10px 14px',
-    minHeight: 120,
-    maxHeight: 220,
-    overflowY: 'auto',
-  },
-  bubble: {
-    padding: '8px 12px',
-    borderRadius: 14,
-    maxWidth: '80%',
-  },
-  boardInput: {
-    display: 'flex',
-    gap: 8,
-    padding: '10px 14px 14px',
-    borderTop: '0.5px solid rgba(255,255,255,0.08)',
-  },
-  boardField: {
-    flex: 1,
-    background: 'rgba(255,255,255,0.08)',
-    border: '0.5px solid rgba(255,255,255,0.12)',
-    borderRadius: 20,
-    padding: '9px 14px',
-    color: '#fff',
-    fontSize: 14,
-    outline: 'none',
-  },
-  sendBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: '50%',
-    background: 'var(--accent-m)',
-    color: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  shopItem: { display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', fontSize: 14 },
+function Legend({ who, label }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <PersonDot who={who} />
+      <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{label}</span>
+    </div>
+  )
+}
+
+function fmtTime(iso) {
+  if (!iso) return ''
+  try { return new Date(iso).toLocaleTimeString('pl', { hour: '2-digit', minute: '2-digit' }) } catch { return '' }
 }
