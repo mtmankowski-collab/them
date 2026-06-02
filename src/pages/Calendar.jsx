@@ -58,7 +58,7 @@ export default function Calendar({ user }) {
 
   async function saveEvent() {
     if (!form.title || !form.date) return
-    await supabase.from('events').insert({ ...form, added_by: user.initials })
+    await supabase.from('events').insert({ ...form })
     setShowModal(false)
     setForm({ title: '', date: '', time_start: '', time_end: '', location: '', owner: 'shared' })
     loadEvents()
