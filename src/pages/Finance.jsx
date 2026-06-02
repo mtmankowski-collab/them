@@ -13,6 +13,7 @@ export default function Finance() {
   const [expenses, setExpenses] = useState([])
   const [bills, setBills] = useState([])
   const [addOpen, setAddOpen] = useState(false)
+  const [editItem, setEditItem] = useState(null)
   const [f, setF] = useState({})
 
   const now = new Date()
@@ -24,29 +25,60 @@ export default function Finance() {
   }, [])
 
   function openAdd() {
+    setEditItem(null)
     setF(mode === 'expenses'
       ? { title: '', amount: '', category: 'Jedzenie', added_by: 'a' }
-      : { title: '', amount: '', due_day: '10', who: 'shared' })
+      : { title: '', amount: '', due_day: '10' })
+    setAddOpen(true)
+  }
+
+  function openEditItem(item) {
+    setEditItem(item)
+    if (mode === 'expenses') {
+      setF({ title: item.title, amount: String(item.amount), category: item.category, added_by: item.added_by })
+    } else {
+      setF({ title: item.title, amount: String(item.amount), due_day: String(item.due_day) })
+    }
     setAddOpen(true)
   }
 
   async function submit() {
     if (!f.title?.trim()) return
     if (mode === 'expenses') {
-      const { data } = await supabase.from('expenses').insert({
-        title: f.title.trim(), amount: parseFloat(f.amount) || 0,
-        category: f.category, added_by: f.added_by,
-        date: now.toISOString().split('T')[0],
-      }).select().single()
-      if (data) setExpenses(prev => [data, ...prev])
+      if (editItem) {
+        await supabase.from('expenses').update({ title: f.title.trim(), amount: parseFloat(f.amount)||0, category: f.category, added_by: f.added_by }).eq('id', editItem.id)
+        setExpenses(prev => prev.map(e => e.id === editItem.id ? { ...e, title: f.title.trim(), amount: parseFloat(f.amount)||0, category: f.category, added_by: f.added_by } : e))
+      } else {
+        const { data } = await supabase.from('expenses').insert({
+          title: f.title.trim(), amount: parseFloat(f.amount)||0, category: f.category, added_by: f.added_by,
+          date: now.toISOString().split('T')[0],
+        }).select().single()
+        if (data) setExpenses(prev => [data, ...prev])
+      }
     } else {
-      const { data } = await supabase.from('bills').insert({
-        title: f.title.trim(), amount: parseFloat(f.amount) || 0,
-        due_day: parseInt(f.due_day) || 1, paid_months: [],
-      }).select().single()
-      if (data) setBills(prev => [...prev, data].sort((a,b) => a.due_day - b.due_day))
+      if (editItem) {
+        await supabase.from('bills').update({ title: f.title.trim(), amount: parseFloat(f.amount)||0, due_day: parseInt(f.due_day)||1 }).eq('id', editItem.id)
+        setBills(prev => prev.map(b => b.id === editItem.id ? { ...b, title: f.title.trim(), amount: parseFloat(f.amount)||0, due_day: parseInt(f.due_day)||1 } : b))
+      } else {
+        const { data } = await supabase.from('bills').insert({
+          title: f.title.trim(), amount: parseFloat(f.amount)||0, due_day: parseInt(f.due_day)||1, paid_months: [],
+        }).select().single()
+        if (data) setBills(prev => [...prev, data].sort((a,b) => a.due_day - b.due_day))
+      }
     }
-    setAddOpen(false)
+    setAddOpen(false); setEditItem(null)
+  }
+
+  async function deleteItem() {
+    if (!editItem) return
+    if (mode === 'expenses') {
+      await supabase.from('expenses').delete().eq('id', editItem.id)
+      setExpenses(prev => prev.filter(e => e.id !== editItem.id))
+    } else {
+      await supabase.from('bills').delete().eq('id', editItem.id)
+      setBills(prev => prev.filter(b => b.id !== editItem.id))
+    }
+    setAddOpen(false); setEditItem(null)
   }
 
   async function toggleBillPaid(bill) {
@@ -78,7 +110,7 @@ export default function Finance() {
       } />
 
       <div style={{ marginBottom: 18 }}>
-        <Segmented value={mode} onChange={setMode} options={[
+        <Segmented value={mode} onChange={v => { setMode(v) }} options={[
           { value:'expenses', label:'Wydatki' }, { value:'bills', label:'Stałe opłaty' }
         ]} />
       </div>
@@ -113,7 +145,7 @@ export default function Finance() {
           <SectionTitle title="Ostatnie wydatki" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {expenses.map(e => (
-              <Card key={e.id} pad={13}>
+              <Card key={e.id} pad={13} onClick={() => openEditItem(e)} style={{ cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 13, background: 'var(--cream-warm)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--line)' }}>
@@ -152,23 +184,26 @@ export default function Finance() {
           <SectionTitle title="Miesięczne opłaty" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {sorted.map(b => (
-              <Card key={b.id} pad={14} style={{ opacity: b.paid ? 0.72 : 1 }} onClick={() => toggleBillPaid(b)}>
+              <Card key={b.id} pad={14} style={{ opacity: b.paid ? 0.72 : 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                  <div onClick={() => toggleBillPaid(b)} style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
                     border: '1.8px solid ' + (b.paid ? 'var(--paid)' : 'var(--line-strong)'),
                     background: b.paid ? 'var(--paid)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {b.paid && <Icon name="check" size={15} color="#fff" stroke={2.2} />}
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1 }} onClick={() => toggleBillPaid(b)}>
                     <div style={{ font: '500 14.5px/1.1 var(--font-sans)', color: 'var(--ink)' }}>{b.title}</div>
                     <div style={{ font: '400 12px/1 var(--font-sans)', color: b.paid ? 'var(--ink-3)' : 'var(--ink-2)', marginTop: 4 }}>
                       {b.paid ? 'Opłacone' : `Termin ${b.due_day} ${now.toLocaleString('pl', { month: 'short' })}`}
                     </div>
                   </div>
-                  <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', whiteSpace: 'nowrap' }}>
+                  <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', whiteSpace: 'nowrap' }} onClick={() => toggleBillPaid(b)}>
                     {b.amount?.toLocaleString('pl')} zł
                   </div>
+                  <button onClick={() => openEditItem(b)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, lineHeight: 0 }}>
+                    <Icon name="edit" size={16} color="var(--ink-3)" />
+                  </button>
                 </div>
               </Card>
             ))}
@@ -176,10 +211,13 @@ export default function Finance() {
         </>
       )}
 
-      <Sheet open={addOpen} title={mode === 'expenses' ? 'Nowy wydatek' : 'Nowa stała opłata'}
-        onClose={() => setAddOpen(false)} onSubmit={submit}
-        submitLabel={mode === 'expenses' ? 'Zapisz wydatek' : 'Dodaj opłatę'}
-        accent={mode === 'expenses' ? 'var(--a)' : 'var(--ink)'}>
+      <Sheet open={addOpen}
+        title={editItem ? (mode === 'expenses' ? 'Edytuj wydatek' : 'Edytuj opłatę') : (mode === 'expenses' ? 'Nowy wydatek' : 'Nowa stała opłata')}
+        onClose={() => { setAddOpen(false); setEditItem(null) }}
+        onSubmit={submit}
+        submitLabel={editItem ? 'Zapisz zmiany' : (mode === 'expenses' ? 'Zapisz wydatek' : 'Dodaj opłatę')}
+        accent={mode === 'expenses' ? 'var(--a)' : 'var(--ink)'}
+        onDelete={editItem ? deleteItem : undefined}>
         {mode === 'expenses' ? <>
           <Field label="Na co"><TextInput value={f.title||''} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Biedronka" /></Field>
           <Field label="Kwota"><TextInput value={f.amount||''} onChange={v => setF(p=>({...p,amount:v}))} type="number" placeholder="0,00" prefix="zł" /></Field>
@@ -211,7 +249,5 @@ function SplitHalf({ who, name, amount, pct }) {
 
 function fmtDate(d) {
   if (!d) return ''
-  try {
-    return new Date(d).toLocaleDateString('pl', { day: 'numeric', month: 'short' })
-  } catch { return d }
+  try { return new Date(d).toLocaleDateString('pl', { day: 'numeric', month: 'short' }) } catch { return d }
 }

@@ -133,14 +133,16 @@ export function ScreenHead({ title, sub, right, onBack }) {
   )
 }
 
-export function Sheet({ open, title, sub, onClose, onSubmit, submitLabel = 'Dodaj', accent = 'var(--ink)', children }) {
+export function Sheet({ open, title, sub, onClose, onSubmit, onDelete, submitLabel = 'Dodaj', accent = 'var(--ink)', children }) {
   if (!open) return null
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(26,22,18,.42)',
-      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', animation: 'them-fade .2s ease' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(26,22,18,.42)',
+      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', animation: 'them-fade .2s ease' }}
+      onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderTopLeftRadius: 26,
-        borderTopRightRadius: 26, padding: '10px 20px calc(20px + env(safe-area-inset-bottom))', maxHeight: '90%',
-        overflowY: 'auto', boxShadow: '0 -12px 40px rgba(26,22,18,.22)', animation: 'them-slideup .26s cubic-bezier(.2,.9,.3,1)' }}>
+        borderTopRightRadius: 26, padding: '10px 20px calc(24px + env(safe-area-inset-bottom, 0px))', maxHeight: '92%',
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
+        boxShadow: '0 -12px 40px rgba(26,22,18,.22)', animation: 'them-slideup .26s cubic-bezier(.2,.9,.3,1)' }}>
         <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--line-strong)', margin: '0 auto 16px' }} />
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
           <div>
@@ -158,6 +160,11 @@ export function Sheet({ open, title, sub, onClose, onSubmit, submitLabel = 'Doda
           <button onClick={onSubmit} style={{ width: '100%', marginTop: 22, background: accent, color: '#fff',
             border: 'none', cursor: 'pointer', borderRadius: 'var(--r-md)', padding: '15px',
             font: '600 15px/1 var(--font-sans)', boxShadow: 'var(--sh-1)' }}>{submitLabel}</button>
+        )}
+        {onDelete && (
+          <button onClick={onDelete} style={{ width: '100%', marginTop: 10, background: 'transparent', color: '#B6543F',
+            border: '1px solid #B6543F', cursor: 'pointer', borderRadius: 'var(--r-md)', padding: '13px',
+            font: '500 14px/1 var(--font-sans)' }}>Usuń</button>
         )}
       </div>
     </div>

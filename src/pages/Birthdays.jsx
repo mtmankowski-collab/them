@@ -4,29 +4,20 @@ import { Card, ScreenHead, SectionTitle, navBtn, Sheet, Field, TextInput, ChipPi
 
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
 const LS_KEY = 'them_birthdays'
-
-const DEFAULT_BIRTHDAYS = [
-  { id:1, name:'Ula',           date:'21.02', year:1991, rel:'Partnerka' },
-  { id:2, name:'Tosia',         date:'12.06', year:2020, rel:'Córka' },
-  { id:3, name:'Mama Uli',      date:'15.07', year:1962, rel:'Teściowa' },
-  { id:4, name:'Maniek',        date:'03.09', year:1988, rel:'Partner' },
-  { id:5, name:'Tata Mańka',    date:'30.11', year:1959, rel:'Ojciec' },
-  { id:6, name:'Kasia (siostra)', date:'08.04', year:1993, rel:'Rodzina' },
-]
-
 const SERIF = "'Bodoni Moda', Georgia, serif"
 
 export default function Birthdays({ onBack }) {
   const [birthdays, setBirthdays] = useState([])
   const [addOpen, setAddOpen] = useState(false)
+  const [editItem, setEditItem] = useState(null)
   const [f, setF] = useState({ name: '', date: '', rel: 'Rodzina', year: '' })
 
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(LS_KEY))
-      setBirthdays(saved || DEFAULT_BIRTHDAYS)
+      setBirthdays(saved || [])
     } catch {
-      setBirthdays(DEFAULT_BIRTHDAYS)
+      setBirthdays([])
     }
   }, [])
 
@@ -35,12 +26,33 @@ export default function Birthdays({ onBack }) {
     localStorage.setItem(LS_KEY, JSON.stringify(updated))
   }
 
-  function addBirthday() {
-    if (!f.name.trim() || !f.date.trim()) return
-    const updated = [...birthdays, { id: Date.now(), name: f.name.trim(), date: f.date.trim(), rel: f.rel, year: f.year ? parseInt(f.year) : undefined }]
-    save(updated)
-    setAddOpen(false)
+  function openAdd() {
+    setEditItem(null)
     setF({ name: '', date: '', rel: 'Rodzina', year: '' })
+    setAddOpen(true)
+  }
+
+  function openEdit(b) {
+    setEditItem(b)
+    setF({ name: b.name, date: b.date, rel: b.rel, year: b.year ? String(b.year) : '' })
+    setAddOpen(true)
+  }
+
+  function submit() {
+    if (!f.name.trim() || !f.date.trim()) return
+    const item = { id: editItem?.id || Date.now(), name: f.name.trim(), date: f.date.trim(), rel: f.rel, year: f.year ? parseInt(f.year) : undefined }
+    if (editItem) {
+      save(birthdays.map(b => b.id === editItem.id ? item : b))
+    } else {
+      save([...birthdays, item])
+    }
+    setAddOpen(false); setEditItem(null)
+  }
+
+  function deleteItem() {
+    if (!editItem) return
+    save(birthdays.filter(b => b.id !== editItem.id))
+    setAddOpen(false); setEditItem(null)
   }
 
   function parse(d) {
@@ -65,8 +77,14 @@ export default function Birthdays({ onBack }) {
   return (
     <div className="screen" style={{ position: 'relative' }}>
       <ScreenHead title="Urodziny" sub="Cały rok w jednym miejscu" onBack={onBack} right={
-        <button style={navBtn} onClick={() => setAddOpen(true)}><Icon name="plus" size={20} color="var(--ink)" /></button>
+        <button style={navBtn} onClick={openAdd}><Icon name="plus" size={20} color="var(--ink)" /></button>
       } />
+
+      {!birthdays.length && (
+        <div style={{ padding: '40px 0', textAlign: 'center', font: '400 14px/1.5 var(--font-sans)', color: 'var(--ink-3)' }}>
+          Brak urodzin. Dodaj pierwsze! 🎂
+        </div>
+      )}
 
       {Object.keys(groups).map(m => (
         <div key={m} style={{ marginBottom: 18 }}>
@@ -75,8 +93,8 @@ export default function Birthdays({ onBack }) {
             {groups[m].map((b, i) => {
               const { dd } = parse(b.date)
               return (
-                <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px',
-                  borderTop: i ? '1px solid var(--line)' : 'none' }}>
+                <div key={b.id} onClick={() => openEdit(b)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px',
+                  borderTop: i ? '1px solid var(--line)' : 'none', cursor: 'pointer' }}>
                   <div style={{ width: 42, height: 42, borderRadius: 13, background: 'var(--a-soft)', flexShrink: 0,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ font: `500 16px/1 ${SERIF}`, color: 'var(--a-deep)' }}>{dd}</span>
@@ -89,7 +107,7 @@ export default function Birthdays({ onBack }) {
                       {b.rel}{b.year ? ` · kończy ${turns(b.year)}` : ''}
                     </div>
                   </div>
-                  <Icon name="gift" size={19} color="var(--ink-3)" />
+                  <Icon name="edit" size={17} color="var(--ink-3)" />
                 </div>
               )
             })}
@@ -97,7 +115,11 @@ export default function Birthdays({ onBack }) {
         </div>
       ))}
 
-      <Sheet open={addOpen} title="Dodaj urodziny" onClose={() => setAddOpen(false)} onSubmit={addBirthday} submitLabel="Zapisz" accent="var(--a)">
+      <Sheet open={addOpen}
+        title={editItem ? 'Edytuj urodziny' : 'Dodaj urodziny'}
+        onClose={() => { setAddOpen(false); setEditItem(null) }}
+        onSubmit={submit} submitLabel="Zapisz" accent="var(--a)"
+        onDelete={editItem ? deleteItem : undefined}>
         <Field label="Kto"><TextInput value={f.name} onChange={v => setF(p=>({...p,name:v}))} placeholder="np. Babcia Hania" /></Field>
         <Field label="Data (DD.MM)"><TextInput value={f.date} onChange={v => setF(p=>({...p,date:v}))} placeholder="21.02" /></Field>
         <Field label="Rok urodzenia (opcjonalnie)"><TextInput value={f.year} onChange={v => setF(p=>({...p,year:v}))} type="number" placeholder="1985" /></Field>
