@@ -10,14 +10,21 @@ export default function Chat({ onBack }) {
   const [draft, setDraft] = useState('')
   const [sender, setSender] = useState('a')
   const endRef = useRef(null)
+  const seenIds = useRef(new Set())
 
   useEffect(() => {
     supabase.from('board').select('*').order('created_at').then(({ data }) => {
-      if (data) setMsgs(data.map(m => ({ id: m.id, who: m.author, text: m.message, at: fmtTime(m.created_at) })))
+      if (data) {
+        const mapped = data.map(m => ({ id: m.id, who: m.author, text: m.message, at: fmtTime(m.created_at) }))
+        mapped.forEach(m => seenIds.current.add(m.id))
+        setMsgs(mapped)
+      }
     })
     const sub = supabase.channel('board-live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'board' }, payload => {
         const m = payload.new
+        if (seenIds.current.has(m.id)) return
+        seenIds.current.add(m.id)
         setMsgs(prev => [...prev, { id: m.id, who: m.author, text: m.message, at: fmtTime(m.created_at) }])
       }).subscribe()
     return () => supabase.removeChannel(sub)
@@ -31,7 +38,21 @@ export default function Chat({ onBack }) {
     const text = draft.trim()
     if (!text) return
     setDraft('')
-    await supabase.from('board').insert({ message: text, author: sender })
+    const tmpId = 'tmp-' + Date.now()
+    seenIds.current.add(tmpId)
+    setMsgs(prev => [...prev, { id: tmpId, who: sender, text, at: 'teraz' }])
+    const { data } = await supabase.from('board').insert({ message: text, author: sender }).select().single()
+    if (data) {
+      seenIds.current.add(data.id)
+      setMsgs(prev => prev.map(m => m.id === tmpId ? { id: data.id, who: data.author, text: data.message, at: fmtTime(data.created_at) } : m))
+    }
+  }
+
+  async function clearChat() {
+    if (!window.confirm('Wyczyścić historię rozmowy?')) return
+    await supabase.from('board').delete().neq('id', 0)
+    seenIds.current.clear()
+    setMsgs([])
   }
 
   return (
@@ -47,6 +68,11 @@ export default function Chat({ onBack }) {
           <div style={{ font: `500 16px/1 ${SERIF}`, color: 'var(--ink)' }}>Maniek &amp; Ula</div>
           <div style={{ font: '400 11.5px/1 var(--font-sans)', color: 'var(--ink-2)', marginTop: 3 }}>Wasza rozmowa</div>
         </div>
+        <button onClick={clearChat} style={{ background: 'var(--cream-warm)', border: '1px solid var(--line)',
+          borderRadius: 'var(--r-pill)', padding: '7px 13px', font: '500 12px/1 var(--font-sans)',
+          color: 'var(--ink-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="close" size={13} color="var(--ink-3)" />wyczyść czas
+        </button>
       </div>
 
       <div ref={endRef} style={{ flex: 1, overflowY: 'auto', padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -95,7 +121,7 @@ export default function Chat({ onBack }) {
             borderRadius: 'var(--r-pill)', padding: '4px 4px 4px 16px', border: '1px solid var(--line)' }}>
             <input value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
               placeholder="Napisz wiadomość…" style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none',
-              font: '400 14px/1 var(--font-sans)', color: 'var(--ink)', minWidth: 0 }} />
+              fontSize: 16, fontFamily: 'var(--font-sans)', color: 'var(--ink)', minWidth: 0 }} />
             <button onClick={send} style={{ width: 38, height: 38, borderRadius: '50%', background: personColor(sender),
               border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Icon name="send" size={18} color="#fff" />

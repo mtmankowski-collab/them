@@ -10,7 +10,7 @@ export default function Places({ onBack }) {
   const [cat, setCat] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ name: '', category: 'Jedzenie', city: '', notes: '', mapUrl: '' })
+  const [f, setF] = useState({ name: '', category: 'Jedzenie', city: '', notes: '', map_url: '' })
 
   useEffect(() => {
     supabase.from('places').select('*').order('rating', { ascending: false }).then(({ data }) => setPlaces(data || []))
@@ -20,26 +20,30 @@ export default function Places({ onBack }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ name: '', category: 'Jedzenie', city: '', notes: '', mapUrl: '' })
+    setF({ name: '', category: 'Jedzenie', city: '', notes: '', map_url: '' })
     setAddOpen(true)
   }
 
   function openEdit(p) {
     setEditItem(p)
-    setF({ name: p.name, category: p.category || 'Jedzenie', city: p.city || '', notes: p.notes || '', mapUrl: p.mapUrl || '' })
+    setF({ name: p.name, category: p.category || 'Jedzenie', city: p.city || '', notes: p.notes || '', map_url: p.map_url || p.mapUrl || '' })
     setAddOpen(true)
   }
 
   async function submit() {
     if (!f.name.trim()) return
     if (editItem) {
-      await supabase.from('places').update({ name: f.name.trim(), category: f.category, city: f.city, notes: f.notes }).eq('id', editItem.id)
-      setPlaces(prev => prev.map(p => p.id === editItem.id ? { ...p, name: f.name.trim(), category: f.category, city: f.city, notes: f.notes } : p))
+      const { error } = await supabase.from('places').update({
+        name: f.name.trim(), category: f.category, city: f.city, notes: f.notes, map_url: f.map_url,
+      }).eq('id', editItem.id)
+      if (!error) setPlaces(prev => prev.map(p => p.id === editItem.id
+        ? { ...p, name: f.name.trim(), category: f.category, city: f.city, notes: f.notes, map_url: f.map_url }
+        : p))
     } else {
-      const { data } = await supabase.from('places').insert({
-        name: f.name.trim(), category: f.category, city: f.city, notes: f.notes, rating: 0,
+      const { data, error } = await supabase.from('places').insert({
+        name: f.name.trim(), category: f.category, city: f.city, notes: f.notes, rating: 0, map_url: f.map_url,
       }).select().single()
-      if (data) setPlaces(prev => [...prev, data])
+      if (data) setPlaces(prev => [data, ...prev])
     }
     setAddOpen(false)
     setEditItem(null)
@@ -74,27 +78,35 @@ export default function Places({ onBack }) {
 
       {filtered.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map(p => (
-            <Card key={p.id} pad={14} onClick={() => openEdit(p)} style={{ cursor: 'pointer' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)', marginBottom: 4 }}>{p.name}</div>
-                  <div style={{ font: '400 12.5px/1 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>
-                    {p.city}{p.category ? ' · ' + p.category : ''}
+          {filtered.map(p => {
+            const mapUrl = p.map_url || p.mapUrl
+            return (
+              <Card key={p.id} pad={14} onClick={() => openEdit(p)} style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)', marginBottom: 4 }}>{p.name}</div>
+                    <div style={{ font: '400 12.5px/1 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>
+                      {p.city}{p.category ? ' · ' + p.category : ''}
+                    </div>
+                    {p.notes && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>{p.notes}</div>}
+                    <Stars value={p.rating || 0} size={13} />
                   </div>
-                  {p.notes && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>{p.notes}</div>}
-                  <Stars value={p.rating || 0} size={13} />
+                  {mapUrl ? (
+                    <a href={mapUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                      style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--b-soft)', border: '1px solid var(--line)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, textDecoration: 'none' }}>
+                      <Icon name="map" size={20} color="var(--b)" />
+                    </a>
+                  ) : (
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--cream-warm)', border: '1px solid var(--line)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon name="map" size={20} color="var(--ink-3)" />
+                    </div>
+                  )}
                 </div>
-                {p.mapUrl && (
-                  <a href={p.mapUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                    style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--b-soft)', border: '1px solid var(--line)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, textDecoration: 'none' }}>
-                    <Icon name="map" size={18} color="var(--b)" />
-                  </a>
-                )}
-              </div>
-            </Card>
-          ))}
+              </Card>
+            )
+          })}
         </div>
       ) : (
         <EmptyState icon="pin" title="Brak miejsc" sub="Dodajcie swoje ulubione miejsca."
@@ -110,6 +122,7 @@ export default function Places({ onBack }) {
         <Field label="Kategoria"><ChipPicker value={f.category} onChange={v => setF(p=>({...p,category:v}))} options={CATS} /></Field>
         <Field label="Miasto / dzielnica"><TextInput value={f.city} onChange={v => setF(p=>({...p,city:v}))} placeholder="Mokotów" /></Field>
         <Field label="Notatka"><TextInput value={f.notes} onChange={v => setF(p=>({...p,notes:v}))} placeholder="Co tam lubicie" /></Field>
+        <Field label="Link Google Maps (opcjonalnie)"><TextInput value={f.map_url} onChange={v => setF(p=>({...p,map_url:v}))} placeholder="https://maps.google.com/..." /></Field>
       </Sheet>
     </div>
   )
