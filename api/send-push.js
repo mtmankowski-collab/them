@@ -46,5 +46,7 @@ export default async function handler(req, res) {
   }
 
   const sent = results.filter(r => r.status === 'fulfilled').length
-  res.json({ sent, total: subs.length })
+  const errors = results.filter(r => r.status === 'rejected').map(r => r.reason?.message || r.reason?.statusCode || String(r.reason))
+  console.log('send-push results:', { sent, total: subs.length, errors })
+  res.json({ sent, total: subs.length, errors })
 }
