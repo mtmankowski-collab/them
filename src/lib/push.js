@@ -10,22 +10,32 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 export async function subscribeToPush() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.error('push: SW or PushManager not supported')
+    return false
+  }
   try {
-    const reg = await navigator.serviceWorker.ready
+    console.log('push: waiting for SW...')
+    const swTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error('SW timeout')), 8000))
+    const reg = await Promise.race([navigator.serviceWorker.ready, swTimeout])
+    console.log('push: SW ready')
     let sub = await reg.pushManager.getSubscription()
     if (!sub) {
+      console.log('push: creating new subscription...')
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       })
     }
+    console.log('push: saving to DB...')
     const j = sub.toJSON()
-    await supabase.from('push_subscriptions').upsert({
+    const { error } = await supabase.from('push_subscriptions').upsert({
       endpoint: j.endpoint,
       p256dh: j.keys.p256dh,
       auth: j.keys.auth,
     }, { onConflict: 'endpoint' })
+    if (error) { console.error('push: DB error', error); return false }
+    console.log('push: done OK')
     return true
   } catch (e) {
     console.error('push subscribe error', e)
