@@ -33,6 +33,7 @@ export default function Icon({ name, size = 22, stroke = 1.6, color = 'currentCo
     star:     <path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 17l-5.3 2.6 1-5.8-4.2-4.1 5.9-.9z" {...p} />,
     lock:     <><rect x="5" y="10" width="14" height="10" rx="2.5" {...p} /><path d="M8 10V7.5a4 4 0 0 1 8 0V10" {...p} /></>,
     map:      <path d="M9 4L3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4zM9 4v14M15 6v14" {...p} />,
+    navigate: <path d="M3 11.5L21 3l-8.5 18-2-7.5z" {...p} />,
     book:     <><path d="M4 5.5A2 2 0 0 1 6 4h6v15H6a2 2 0 0 0-2 1.5z" {...p} /><path d="M20 5.5A2 2 0 0 0 18 4h-6v15h6a2 2 0 0 1 2 1.5z" {...p} /></>,
     sparkle:  <path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6z" {...p} />,
     clock:    <><circle cx="12" cy="12" r="8" {...p} /><path d="M12 8v4.5l3 1.5" {...p} /></>,

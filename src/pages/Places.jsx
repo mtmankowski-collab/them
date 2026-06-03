@@ -118,7 +118,7 @@ export default function Places({ onBack }) {
                     <a href={mapUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                       style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--b)', border: 'none',
                         borderRadius: 'var(--r-pill)', padding: '10px 14px', textDecoration: 'none', flexShrink: 0, cursor: 'pointer' }}>
-                      <Icon name="map" size={16} color="#fff" />
+                      <Icon name="navigate" size={16} color="#fff" />
                       <span style={{ font: '600 12px/1 var(--font-sans)', color: '#fff', whiteSpace: 'nowrap' }}>Nawiguj</span>
                     </a>
                   ) : null}

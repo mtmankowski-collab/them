@@ -201,7 +201,7 @@ function TripDetail({ trip, onBack, onEdit }) {
                         <a href={p.map_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                           style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--b)', border: 'none',
                             borderRadius: 'var(--r-pill)', padding: '8px 12px', textDecoration: 'none', flexShrink: 0, cursor: 'pointer' }}>
-                          <Icon name="map" size={15} color="#fff" />
+                          <Icon name="navigate" size={15} color="#fff" />
                           <span style={{ font: '600 11.5px/1 var(--font-sans)', color: '#fff' }}>Mapa</span>
                         </a>
                       )}
