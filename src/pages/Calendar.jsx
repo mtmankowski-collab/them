@@ -55,6 +55,12 @@ export default function Calendar({ onGoBirthdays }) {
   }
 
   useEffect(() => {
+    const reload = () => setBirthdayMarks(loadBirthdayMarks(month))
+    window.addEventListener('birthdaysChanged', reload)
+    return () => window.removeEventListener('birthdaysChanged', reload)
+  }, [month])
+
+  useEffect(() => {
     const from = `${year}-${String(month+1).padStart(2,'0')}-01`
     const to = `${year}-${String(month+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`
     supabase.from('events').select('*').gte('date', from).lte('date', to).then(({ data }) => {
@@ -150,8 +156,8 @@ export default function Calendar({ onGoBirthdays }) {
         <button style={navBtnSm} onClick={nextMonth}><Icon name="chevron" size={18} color="var(--ink-2)" /></button>
       </div>
 
-      <Card pad={14} style={{ marginBottom: 16, touchAction: 'pan-y' }}
-        onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ touchAction: 'pan-y' }}>
+      <Card pad={14} style={{ marginBottom: 16 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: 8 }}>
           {DAYS.map(d => <div key={d} style={{ textAlign: 'center', font: '500 11px/1 var(--font-sans)', color: 'var(--ink-3)', letterSpacing: '.04em' }}>{d}</div>)}
         </div>
@@ -179,6 +185,7 @@ export default function Calendar({ onGoBirthdays }) {
           })}
         </div>
       </Card>
+      </div>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 18, padding: '0 2px', flexWrap: 'wrap' }}>
         <Legend who="a" label="Maniek" />

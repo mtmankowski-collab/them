@@ -5,6 +5,18 @@ import { supabase } from '../lib/supabase'
 
 const CATS = ['Jedzenie', 'Aktywność']
 
+function encodeNotes(notes, mapUrl) {
+  if (!mapUrl) return notes
+  return notes ? `${notes}\n__MAP__${mapUrl}` : `__MAP__${mapUrl}`
+}
+function decodeNotes(stored) {
+  if (!stored) return { notes: '', mapUrl: '' }
+  if (stored.startsWith('__MAP__')) return { notes: '', mapUrl: stored.slice(7) }
+  const idx = stored.indexOf('\n__MAP__')
+  if (idx === -1) return { notes: stored, mapUrl: '' }
+  return { notes: stored.slice(0, idx), mapUrl: stored.slice(idx + 8) }
+}
+
 export default function Places({ onBack }) {
   const [places, setPlaces] = useState([])
   const [cat, setCat] = useState('all')
@@ -26,22 +38,24 @@ export default function Places({ onBack }) {
 
   function openEdit(p) {
     setEditItem(p)
-    setF({ name: p.name, category: p.category || 'Jedzenie', city: p.city || '', notes: p.notes || '', map_url: p.map_url || p.mapUrl || '' })
+    const { notes, mapUrl } = decodeNotes(p.notes)
+    setF({ name: p.name, category: p.category || 'Jedzenie', city: p.city || '', notes, map_url: mapUrl })
     setAddOpen(true)
   }
 
   async function submit() {
     if (!f.name.trim()) return
+    const encodedNotes = encodeNotes(f.notes, f.map_url)
     if (editItem) {
       const { error } = await supabase.from('places').update({
-        name: f.name.trim(), category: f.category, city: f.city, notes: f.notes, map_url: f.map_url,
+        name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes,
       }).eq('id', editItem.id)
       if (!error) setPlaces(prev => prev.map(p => p.id === editItem.id
-        ? { ...p, name: f.name.trim(), category: f.category, city: f.city, notes: f.notes, map_url: f.map_url }
+        ? { ...p, name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes }
         : p))
     } else {
       const { data, error } = await supabase.from('places').insert({
-        name: f.name.trim(), category: f.category, city: f.city, notes: f.notes, rating: 0, map_url: f.map_url,
+        name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes, rating: 0,
       }).select().single()
       if (data) setPlaces(prev => [data, ...prev])
     }
@@ -79,7 +93,7 @@ export default function Places({ onBack }) {
       {filtered.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map(p => {
-            const mapUrl = p.map_url || p.mapUrl
+            const { notes: displayNotes, mapUrl } = decodeNotes(p.notes)
             return (
               <Card key={p.id} pad={14} onClick={() => openEdit(p)} style={{ cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -88,7 +102,7 @@ export default function Places({ onBack }) {
                     <div style={{ font: '400 12.5px/1 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>
                       {p.city}{p.category ? ' · ' + p.category : ''}
                     </div>
-                    {p.notes && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>{p.notes}</div>}
+                    {displayNotes && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>{displayNotes}</div>}
                     <Stars value={p.rating || 0} size={13} />
                   </div>
                   {mapUrl ? (

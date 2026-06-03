@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
 import { Card, ScreenHead, SectionTitle, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, ChipPicker } from '../components/ui'
 
-const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzeseń','październik','listopad','grudzień']
+const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
 const LS_KEY = 'them_birthdays'
 const SERIF = "'Bodoni Moda', Georgia, serif"
 
@@ -24,6 +24,7 @@ export default function Birthdays({ onBack }) {
   function save(updated) {
     setBirthdays(updated)
     localStorage.setItem(LS_KEY, JSON.stringify(updated))
+    window.dispatchEvent(new CustomEvent('birthdaysChanged'))
   }
 
   function openAdd() {
