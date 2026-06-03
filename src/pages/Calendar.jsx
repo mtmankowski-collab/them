@@ -10,11 +10,12 @@ const DAYS = ['Pn','Wt','Śr','Cz','Pt','So','Nd']
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
 const LS_BIRTHDAYS = 'them_birthdays'
 
-// Generate time options: 00:00, 00:30 … 23:30
-const TIME_OPTS = []
-for (let h = 0; h < 24; h++) {
-  TIME_OPTS.push(`${String(h).padStart(2,'0')}:00`)
-  TIME_OPTS.push(`${String(h).padStart(2,'0')}:30`)
+function parseTime(v) {
+  const m = v.match(/^(\d{1,2}):(\d{2})$/)
+  if (!m) return null
+  const h = parseInt(m[1]), min = parseInt(m[2])
+  if (h > 23 || min > 59) return null
+  return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`
 }
 
 function birthdayMarksFromData(bdays, month) {
@@ -50,7 +51,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
   const [dayEvs, setDayEvs] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: '', month: month, year: year })
+  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: '', month: month, year: year, dateEnd: '' })
   const [bdEditOpen, setBdEditOpen] = useState(false)
   const [bdEditItem, setBdEditItem] = useState(null)
   const [bdF, setBdF] = useState({ name: '', day: '', month: 0, rel: 'Rodzina', year: '' })
@@ -87,13 +88,19 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
   useEffect(() => {
     const from = `${year}-${String(month+1).padStart(2,'0')}-01`
     const to = `${year}-${String(month+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`
-    supabase.from('events').select('*').gte('date', from).lte('date', to).then(({ data }) => {
+    supabase.from('events').select('*').or(`date.gte.${from},date_end.gte.${from}`).lte('date', to).then(({ data }) => {
       if (!data) return
       const m = {}
       data.forEach(e => {
-        const d = parseInt(e.date.split('-')[2])
-        if (!m[d]) m[d] = []
-        m[d].push({ who: e.owner })
+        const start = new Date(e.date + 'T12:00:00')
+        const end = e.date_end ? new Date(e.date_end + 'T12:00:00') : start
+        for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+          if (cur.getFullYear() === year && cur.getMonth() === month) {
+            const d = cur.getDate()
+            if (!m[d]) m[d] = []
+            m[d].push({ who: e.owner })
+          }
+        }
       })
       setMarks(m)
       scheduleUpcomingEventNotifications(data)
@@ -131,13 +138,14 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
       return
     }
 
-    const timeStart = f.allDay ? null : (f.time + ':00')
+    const timeStart = f.allDay ? null : ((parseTime(f.time) || f.time) + ':00')
+    const dateEnd = f.dateEnd || null
 
     if (editItem) {
-      await supabase.from('events').update({ title: f.title, time_start: timeStart, location: f.location, owner: f.owner }).eq('id', editItem.id)
-      setDayEvs(prev => prev.map(e => e.id === editItem.id ? { ...e, title: f.title, time_start: timeStart, location: f.location, owner: f.owner } : e))
+      await supabase.from('events').update({ title: f.title, time_start: timeStart, location: f.location, owner: f.owner, date_end: dateEnd }).eq('id', editItem.id)
+      setDayEvs(prev => prev.map(e => e.id === editItem.id ? { ...e, title: f.title, time_start: timeStart, location: f.location, owner: f.owner, date_end: dateEnd } : e))
     } else {
-      const { data } = await supabase.from('events').insert({ title: f.title, date, time_start: timeStart, location: f.location, owner: f.owner }).select().single()
+      const { data } = await supabase.from('events').insert({ title: f.title, date, time_start: timeStart, location: f.location, owner: f.owner, date_end: dateEnd }).select().single()
       if (data) {
         const d = parseInt(date.split('-')[2])
         if (evYear === year && evMonth === month) {
@@ -160,7 +168,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
     const evMonth = evDate ? evDate.getMonth() : month
     const evYear = evDate ? evDate.getFullYear() : year
     const evDay = evDate ? String(evDate.getDate()) : ''
-    setF({ title: ev.title, time: ev.time_start?.slice(0,5) || '12:00', owner: ev.owner, location: ev.location || '', isBirthday: false, allDay: !ev.time_start, day: evDay, month: evMonth, year: evYear })
+    setF({ title: ev.title, time: ev.time_start?.slice(0,5) || '12:00', owner: ev.owner, location: ev.location || '', isBirthday: false, allDay: !ev.time_start, day: evDay, month: evMonth, year: evYear, dateEnd: ev.date_end || '' })
     setAddOpen(true)
   }
 
@@ -216,7 +224,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: String(sel), month, year })
+    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: String(sel), month, year, dateEnd: '' })
     setAddOpen(true)
   }
 
@@ -374,17 +382,14 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
         </div>
 
         {!f.allDay && (
-          <Field label="Godzina">
-            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--cream-warm)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: '0 14px' }}>
-              <select value={f.time} onChange={e => setF(p => ({...p, time: e.target.value}))}
-                style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', padding: '13px 0',
-                  font: '400 16px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}>
-                {TIME_OPTS.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-              <Icon name="chevron" size={16} color="var(--ink-3)" />
-            </div>
+          <Field label="Godzina (np. 9:15)">
+            <TextInput value={f.time} onChange={v => setF(p => ({...p, time: v}))} placeholder="12:00" />
           </Field>
         )}
+
+        <Field label="Data końca (opcjonalnie, dla wydarzeń wielodniowych)">
+          <TextInput value={f.dateEnd} onChange={v => setF(p => ({...p, dateEnd: v}))} placeholder="np. 2026-06-15" />
+        </Field>
 
         <Field label="Miejsce (opcjonalnie)"><TextInput value={f.location} onChange={v => setF(p => ({...p, location: v}))} placeholder="np. ul. Lipowa 4" /></Field>
         <Field label="Kto"><PersonPicker value={f.owner} onChange={v => setF(p => ({...p, owner: v}))} /></Field>
