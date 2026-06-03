@@ -459,10 +459,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {f.isBirthday && <Icon name="check" size={15} color="#fff" stroke={2.2} />}
             </div>
-            <div>
-              <div style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Dodaj jako urodziny</div>
-              <div style={{ font: '400 11.5px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 3 }}>Tylko w urodzinach, bez wpisu w kalendarzu</div>
-            </div>
+            <div style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Dodaj jako urodziny</div>
           </label>
         )}
       </Sheet>

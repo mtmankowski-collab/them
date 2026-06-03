@@ -102,7 +102,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
           {events.length ? events.map((e, i) => (
             <div key={e.id} style={{ display: 'flex', gap: 13, padding: '11px 0',
               borderTop: i ? '1px solid var(--line)' : 'none', alignItems: 'center' }}>
-              <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)', width: 38, flexShrink: 0 }}>{e.time_start?.slice(0,5)}</span>
+              {e.time_start && <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)', width: 38, flexShrink: 0 }}>{e.time_start.slice(0,5)}</span>}
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: personColor(e.owner), flexShrink: 0 }} />
               <span style={{ flex: 1, font: '500 14.5px/1.25 var(--font-sans)', color: 'var(--ink)' }}>{e.title}</span>
               <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>{e.location}</span>
