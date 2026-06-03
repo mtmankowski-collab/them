@@ -26,6 +26,10 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
   ]
 
   async function enableNotifications() {
+    if (notifStatus === 'granted') {
+      await subscribeToPush()
+      return
+    }
     const granted = await requestNotificationPermission()
     setNotifStatus(granted ? 'granted' : 'denied')
     if (granted) subscribeToPush()
@@ -54,7 +58,7 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
     setTimeout(() => setPinSheetOpen(false), 1200)
   }
 
-  const notifLabel = notifStatus === 'granted' ? 'Włączone ✓' : notifStatus === 'denied' ? 'Zablokowane (zmień w przeglądarce)' : notifStatus === 'unsupported' ? 'Niedostępne' : 'Włącz powiadomienia'
+  const notifLabel = notifStatus === 'granted' ? 'Włączone — kliknij aby odświeżyć' : notifStatus === 'denied' ? 'Zablokowane (zmień w przeglądarce)' : notifStatus === 'unsupported' ? 'Niedostępne' : 'Włącz powiadomienia'
 
   return (
     <div className="screen">
@@ -97,9 +101,9 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
         </div>
 
         {/* Notifications */}
-        <div onClick={notifStatus === 'default' ? enableNotifications : undefined}
+        <div onClick={notifStatus !== 'denied' && notifStatus !== 'unsupported' ? enableNotifications : undefined}
           style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px',
-            borderTop: '1px solid var(--line)', cursor: notifStatus === 'default' ? 'pointer' : 'default' }}>
+            borderTop: '1px solid var(--line)', cursor: notifStatus !== 'denied' && notifStatus !== 'unsupported' ? 'pointer' : 'default' }}>
           <Icon name="bell" size={20} color={notifStatus === 'granted' ? 'var(--a)' : 'var(--ink-2)'} />
           <div style={{ flex: 1 }}>
             <div style={{ font: '500 14.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Powiadomienia</div>
