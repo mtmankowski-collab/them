@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Icon from '../components/Icon'
-import { PersonDot, Card, ScreenHead, EmptyState, SectionTitle, AddBtn, navBtn, navBtnSm, Sheet, Field, TextInput, PersonPicker } from '../components/ui'
+import { PersonDot, Card, ScreenHead, EmptyState, SectionTitle, AddBtn, navBtn, navBtnSm, Sheet, Field, TextInput, PersonPicker, ChipPicker } from '../components/ui'
 import { Avatar } from '../components/ui'
 import { supabase, personColor } from '../lib/supabase'
 import { scheduleUpcomingEventNotifications, notifyNewEvent } from '../lib/notifications'
@@ -44,6 +44,9 @@ export default function Calendar({ onGoBirthdays }) {
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: '', month: month, year: year })
+  const [bdEditOpen, setBdEditOpen] = useState(false)
+  const [bdEditItem, setBdEditItem] = useState(null)
+  const [bdF, setBdF] = useState({ name: '', day: '', month: 0, rel: 'Rodzina', year: '' })
 
   const touchStartX = useRef(null)
 
@@ -161,6 +164,39 @@ export default function Calendar({ onGoBirthdays }) {
     })
   }
 
+  function openBdEdit(b) {
+    setBdEditItem(b)
+    const parts = b.date.split('.')
+    setBdF({ name: b.name, day: parts[0], month: parseInt(parts[1]) - 1, rel: b.rel || 'Rodzina', year: b.year ? String(b.year) : '' })
+    setBdEditOpen(true)
+  }
+
+  function submitBdEdit() {
+    if (!bdF.name.trim() || !bdF.day) return
+    const dateStr = `${String(bdF.day).padStart(2,'0')}.${String(bdF.month + 1).padStart(2,'0')}`
+    try {
+      const existing = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
+      const updated = existing.map(b => b.id === bdEditItem.id
+        ? { ...b, name: bdF.name.trim(), date: dateStr, rel: bdF.rel, year: bdF.year ? parseInt(bdF.year) : undefined }
+        : b)
+      localStorage.setItem(LS_BIRTHDAYS, JSON.stringify(updated))
+      window.dispatchEvent(new CustomEvent('birthdaysChanged'))
+    } catch {}
+    setBdEditOpen(false)
+    setBdEditItem(null)
+  }
+
+  function deleteBd() {
+    if (!bdEditItem) return
+    try {
+      const existing = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
+      localStorage.setItem(LS_BIRTHDAYS, JSON.stringify(existing.filter(b => b.id !== bdEditItem.id)))
+      window.dispatchEvent(new CustomEvent('birthdaysChanged'))
+    } catch {}
+    setBdEditOpen(false)
+    setBdEditItem(null)
+  }
+
   function openAdd() {
     setEditItem(null)
     setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: String(sel), month, year })
@@ -237,13 +273,14 @@ export default function Calendar({ onGoBirthdays }) {
       <SectionTitle title={selDateLabel} />
 
       {selBirthdays.map(b => (
-        <Card key={b.id} pad={13} style={{ marginBottom: 8, borderLeft: '4px solid #4A90D9', overflow: 'hidden' }}>
+        <Card key={b.id} pad={13} style={{ marginBottom: 8, borderLeft: '4px solid #4A90D9', overflow: 'hidden', cursor: 'pointer' }} onClick={() => openBdEdit(b)}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 18 }}>🎂</span>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ font: '500 14.5px/1 var(--font-sans)', color: 'var(--ink)' }}>{b.name}</div>
               <div style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-2)', marginTop: 3 }}>{b.rel}{b.year ? ` · kończy ${new Date().getFullYear() - b.year} lat` : ''}</div>
             </div>
+            <Icon name="edit" size={16} color="var(--ink-3)" />
           </div>
         </Card>
       ))}
@@ -347,6 +384,28 @@ export default function Calendar({ onGoBirthdays }) {
             </div>
           </label>
         )}
+      </Sheet>
+
+      {/* Birthday edit sheet */}
+      <Sheet open={bdEditOpen} title="Edytuj urodziny" accent="#4A90D9"
+        onClose={() => { setBdEditOpen(false); setBdEditItem(null) }}
+        onSubmit={submitBdEdit} submitLabel="Zapisz zmiany"
+        onDelete={deleteBd}>
+        <Field label="Imię / nazwa"><TextInput value={bdF.name} onChange={v => setBdF(p=>({...p,name:v}))} placeholder="np. Ziutek" /></Field>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <Field label="Miesiąc">
+              <SelectPill value={bdF.month} onChange={v => setBdF(p=>({...p,month:parseInt(v)}))}>
+                {MONTHS.map((m,i) => <option key={i} value={i}>{m.charAt(0).toUpperCase()+m.slice(1)}</option>)}
+              </SelectPill>
+            </Field>
+          </div>
+          <div style={{ width: 90 }}>
+            <Field label="Dzień"><TextInput value={bdF.day} onChange={v => setBdF(p=>({...p,day:v}))} placeholder="15" /></Field>
+          </div>
+        </div>
+        <Field label="Kim jest"><ChipPicker value={bdF.rel} onChange={v => setBdF(p=>({...p,rel:v}))} options={['Rodzina','Partnerka','Partner','Córka','Syn','Przyjaciel','Inne']} /></Field>
+        <Field label="Rok urodzenia (opcjonalnie)"><TextInput value={bdF.year} onChange={v => setBdF(p=>({...p,year:v.replace(/\D/g,'').slice(0,4)}))} placeholder="1990" /></Field>
       </Sheet>
     </div>
   )

@@ -23,7 +23,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
 
   useEffect(() => {
     const today = now.toISOString().split('T')[0]
-    supabase.from('events').select('*').eq('date', today).order('time_start').then(({ data }) => setEvents(data || []))
+    supabase.from('events').select('*').eq('date', today).order('time_start', { nullsFirst: true }).then(({ data }) => setEvents(data || []))
     supabase.from('shopping').select('*').eq('done', false).order('created_at', { ascending: false }).limit(6).then(({ data }) => setShopping(data || []))
     supabase.from('board').select('*').order('created_at', { ascending: false }).limit(3).then(({ data }) => {
       if (data) setMsgs(data.reverse().map(m => ({ who: m.author, text: m.message, at: fmtTime(m.created_at) })))
@@ -61,7 +61,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
           <div style={{ padding: '15px 16px', flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: nextUp ? 7 : 0 }}>
               <Label style={{ whiteSpace: 'nowrap' }}>Teraz / najbliżej</Label>
-              {nextUp && <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{nextUp.time_start?.slice(0,5)}</span>}
+              {nextUp && <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{nextUp.time_start ? nextUp.time_start.slice(0,5) : 'cały dzień'}</span>}
             </div>
             {nextUp ? (
               <>
