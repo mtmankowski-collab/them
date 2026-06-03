@@ -55,28 +55,28 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
         </div>
       </div>
 
-      {nextUp ? (
-        <Card pad={0} style={{ overflow: 'hidden', marginBottom: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'stretch' }}>
-            <div style={{ width: 6, background: personColor(nextUp.owner) }} />
-            <div style={{ padding: '15px 16px', flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-                <Label style={{ whiteSpace: 'nowrap' }}>Teraz / najbliżej</Label>
-                <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{nextUp.time_start?.slice(0,5)}</span>
-              </div>
-              <div style={{ font: `500 19px/1.15 ${SERIF}`, color: 'var(--ink)', marginBottom: 6 }}>{nextUp.title}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <PersonDot who={nextUp.owner} />
-                <span style={{ font: '400 13px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{nextUp.location}</span>
-              </div>
+      <Card pad={0} style={{ overflow: 'hidden', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+          {nextUp && <div style={{ width: 6, background: personColor(nextUp.owner) }} />}
+          <div style={{ padding: '15px 16px', flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: nextUp ? 7 : 0 }}>
+              <Label style={{ whiteSpace: 'nowrap' }}>Teraz / najbliżej</Label>
+              {nextUp && <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{nextUp.time_start?.slice(0,5)}</span>}
             </div>
+            {nextUp ? (
+              <>
+                <div style={{ font: `500 19px/1.15 ${SERIF}`, color: 'var(--ink)', marginBottom: 6 }}>{nextUp.title}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <PersonDot who={nextUp.owner} />
+                  <span style={{ font: '400 13px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{nextUp.location}</span>
+                </div>
+              </>
+            ) : (
+              <div style={{ font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 6 }}>Brak wydarzeń dziś — wolny dzień 🌿</div>
+            )}
           </div>
-        </Card>
-      ) : (
-        <Card style={{ marginBottom: 14, textAlign: 'center', padding: '20px' }}>
-          <div style={{ font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Brak wydarzeń dziś — wolny dzień 🌿</div>
-        </Card>
-      )}
+        </div>
+      </Card>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 2px 11px', gap: 10 }}>
         <div style={{ font: '500 13px/1 var(--font-sans)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-2)', whiteSpace: 'nowrap' }}>Plan</div>

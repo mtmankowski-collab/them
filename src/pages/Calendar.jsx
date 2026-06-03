@@ -43,7 +43,7 @@ export default function Calendar({ onGoBirthdays }) {
   const [dayEvs, setDayEvs] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: '' })
+  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: '', month: month, year: year })
 
   const touchStartX = useRef(null)
 
@@ -93,12 +93,14 @@ export default function Calendar({ onGoBirthdays }) {
   async function submitEvent() {
     if (!f.title.trim()) return
     const dayNum = parseInt(f.day) || sel
-    const date = `${year}-${String(month+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`
+    const evMonth = (f.month !== undefined ? f.month : month)
+    const evYear = (f.year !== undefined ? f.year : year)
+    const date = `${evYear}-${String(evMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`
 
     // When birthday checkbox is on: only save to localStorage, don't create a calendar event
     if (!editItem && f.isBirthday) {
       const bdDay = String(dayNum).padStart(2, '0')
-      const bdMonth = String(month + 1).padStart(2, '0')
+      const bdMonth = String(evMonth + 1).padStart(2, '0')
       const bdDate = `${bdDay}.${bdMonth}`
       try {
         const existing = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
@@ -120,7 +122,9 @@ export default function Calendar({ onGoBirthdays }) {
       const { data } = await supabase.from('events').insert({ title: f.title, date, time_start: timeStart, location: f.location, owner: f.owner }).select().single()
       if (data) {
         const d = parseInt(date.split('-')[2])
-        setMarks(prev => { const m = { ...prev }; if (!m[d]) m[d] = []; m[d] = [...m[d], { who: f.owner }]; return m })
+        if (evYear === year && evMonth === month) {
+          setMarks(prev => { const m = { ...prev }; if (!m[d]) m[d] = []; m[d] = [...m[d], { who: f.owner }]; return m })
+        }
         const selDate = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
         if (date === selDate) setDayEvs(prev => [...prev, data].sort((a,b) => (a.time_start||'').localeCompare(b.time_start||'')))
         notifyNewEvent(f.title, date, f.time)
@@ -133,7 +137,11 @@ export default function Calendar({ onGoBirthdays }) {
 
   function openEdit(ev) {
     setEditItem(ev)
-    setF({ title: ev.title, time: ev.time_start?.slice(0,5) || '12:00', owner: ev.owner, location: ev.location || '', isBirthday: false, allDay: !ev.time_start, day: '' })
+    const evDate = ev.date ? new Date(ev.date + 'T12:00:00') : null
+    const evMonth = evDate ? evDate.getMonth() : month
+    const evYear = evDate ? evDate.getFullYear() : year
+    const evDay = evDate ? String(evDate.getDate()) : ''
+    setF({ title: ev.title, time: ev.time_start?.slice(0,5) || '12:00', owner: ev.owner, location: ev.location || '', isBirthday: false, allDay: !ev.time_start, day: evDay, month: evMonth, year: evYear })
     setAddOpen(true)
   }
 
@@ -155,7 +163,7 @@ export default function Calendar({ onGoBirthdays }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: String(sel) })
+    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: String(sel), month, year })
     setAddOpen(true)
   }
 
@@ -286,33 +294,40 @@ export default function Calendar({ onGoBirthdays }) {
           <span style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Cały dzień</span>
         </label>
 
-        {!f.allDay && (
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <Field label="Godzina">
-                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--cream-warm)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: '0 14px' }}>
-                  <select value={f.time} onChange={e => setF(p => ({...p, time: e.target.value}))}
-                    style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', padding: '13px 0',
-                      font: '400 16px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}>
-                    {TIME_OPTS.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  <Icon name="chevron" size={16} color="var(--ink-3)" />
-                </div>
-              </Field>
-            </div>
-            <div style={{ width: 110 }}>
-              <Field label={`Dzień (${MONTHS[month].slice(0,3)})`}>
-                <TextInput value={f.day ?? String(sel)} onChange={v => setF(p => ({...p, day: v}))} placeholder={String(sel)} />
-              </Field>
-            </div>
+        {/* Date row: always shown */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ flex: 2 }}>
+            <Field label="Miesiąc">
+              <SelectPill value={f.month} onChange={v => setF(p => ({...p, month: parseInt(v)}))}>
+                {MONTHS.map((m, i) => <option key={i} value={i}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
+              </SelectPill>
+            </Field>
           </div>
-        )}
-        {f.allDay && (
-          <div style={{ width: 110 }}>
-            <Field label={`Dzień (${MONTHS[month].slice(0,3)})`}>
+          <div style={{ flex: 1 }}>
+            <Field label="Dzień">
               <TextInput value={f.day ?? String(sel)} onChange={v => setF(p => ({...p, day: v}))} placeholder={String(sel)} />
             </Field>
           </div>
+          <div style={{ flex: 1 }}>
+            <Field label="Rok">
+              <SelectPill value={f.year} onChange={v => setF(p => ({...p, year: parseInt(v)}))}>
+                {[year - 1, year, year + 1].map(y => <option key={y} value={y}>{y}</option>)}
+              </SelectPill>
+            </Field>
+          </div>
+        </div>
+
+        {!f.allDay && (
+          <Field label="Godzina">
+            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--cream-warm)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: '0 14px' }}>
+              <select value={f.time} onChange={e => setF(p => ({...p, time: e.target.value}))}
+                style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', padding: '13px 0',
+                  font: '400 16px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}>
+                {TIME_OPTS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <Icon name="chevron" size={16} color="var(--ink-3)" />
+            </div>
+          </Field>
         )}
 
         <Field label="Miejsce (opcjonalnie)"><TextInput value={f.location} onChange={v => setF(p => ({...p, location: v}))} placeholder="np. ul. Lipowa 4" /></Field>
@@ -333,6 +348,19 @@ export default function Calendar({ onGoBirthdays }) {
           </label>
         )}
       </Sheet>
+    </div>
+  )
+}
+
+function SelectPill({ value, onChange, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', background: 'var(--cream-warm)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: '0 14px' }}>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', padding: '13px 0',
+          font: '400 16px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', width: '100%' }}>
+        {children}
+      </select>
+      <Icon name="chevron" size={14} color="var(--ink-3)" style={{ flexShrink: 0 }} />
     </div>
   )
 }
