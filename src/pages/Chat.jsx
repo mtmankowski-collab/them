@@ -50,7 +50,7 @@ export default function Chat({ onBack }) {
 
   async function clearChat() {
     if (!window.confirm('Wyczyścić historię rozmowy?')) return
-    await supabase.from('board').delete().neq('id', 0)
+    await supabase.from('board').delete().gte('created_at', '1970-01-01')
     seenIds.current.clear()
     setMsgs([])
   }
@@ -71,7 +71,7 @@ export default function Chat({ onBack }) {
         <button onClick={clearChat} style={{ background: 'var(--cream-warm)', border: '1px solid var(--line)',
           borderRadius: 'var(--r-pill)', padding: '7px 13px', font: '500 12px/1 var(--font-sans)',
           color: 'var(--ink-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Icon name="close" size={13} color="var(--ink-3)" />wyczyść czas
+          <Icon name="close" size={13} color="var(--ink-3)" />wyczyść czat
         </button>
       </div>
 

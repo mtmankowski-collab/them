@@ -24,6 +24,7 @@ export default function Birthdays({ onBack }) {
   function save(updated) {
     setBirthdays(updated)
     localStorage.setItem(LS_KEY, JSON.stringify(updated))
+    window.dispatchEvent(new CustomEvent('birthdaysChanged'))
   }
 
   function openAdd() {

@@ -158,32 +158,41 @@ export function Sheet({ open, title, sub, onClose, onSubmit, onDelete, submitLab
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(26,22,18,.42)',
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', animation: 'them-fade .2s ease' }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderTopLeftRadius: 26,
-        borderTopRightRadius: 26, padding: '10px 20px', paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px))`,
-        maxHeight: '92%', overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
+        borderTopRightRadius: 26, maxHeight: '92%', display: 'flex', flexDirection: 'column',
         marginBottom: kbOffset, boxShadow: '0 -12px 40px rgba(26,22,18,.22)',
         animation: 'them-slideup .26s cubic-bezier(.2,.9,.3,1)' }}>
-        <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--line-strong)', margin: '0 auto 16px' }} />
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
-          <div>
-            <div style={{ font: '400 22px/1.1 var(--font-serif)', color: 'var(--ink)' }}>{title}</div>
-            {sub && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>{sub}</div>}
+        {/* Scrollable content area */}
+        <div style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
+          padding: '10px 20px 16px', flex: 1 }}>
+          <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--line-strong)', margin: '0 auto 16px' }} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
+            <div>
+              <div style={{ font: '400 22px/1.1 var(--font-serif)', color: 'var(--ink)' }}>{title}</div>
+              {sub && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>{sub}</div>}
+            </div>
+            <button onClick={onClose} style={{ background: 'var(--cream-warm)', border: '1px solid var(--line)',
+              width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', flexShrink: 0 }}>
+              <Icon name="close" size={17} color="var(--ink-2)" />
+            </button>
           </div>
-          <button onClick={onClose} style={{ background: 'var(--cream-warm)', border: '1px solid var(--line)',
-            width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', flexShrink: 0 }}>
-            <Icon name="close" size={17} color="var(--ink-2)" />
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>{children}</div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>{children}</div>
-        {onSubmit && (
-          <button onClick={onSubmit} style={{ width: '100%', marginTop: 22, background: accent, color: '#fff',
-            border: 'none', cursor: 'pointer', borderRadius: 'var(--r-md)', padding: '15px',
-            font: '600 15px/1 var(--font-sans)', boxShadow: 'var(--sh-1)' }}>{submitLabel}</button>
-        )}
-        {onDelete && (
-          <button onClick={onDelete} style={{ width: '100%', marginTop: 10, background: 'transparent',
-            color: '#B6543F', border: '1px solid #B6543F', cursor: 'pointer', borderRadius: 'var(--r-md)',
-            padding: '13px', font: '500 14px/1 var(--font-sans)' }}>Usuń</button>
+        {/* Sticky footer with action buttons */}
+        {(onSubmit || onDelete) && (
+          <div style={{ padding: '12px 20px', paddingBottom: `calc(20px + env(safe-area-inset-bottom, 0px))`,
+            borderTop: '1px solid var(--line)', background: 'var(--surface)', flexShrink: 0 }}>
+            {onSubmit && (
+              <button onClick={onSubmit} style={{ width: '100%', background: accent, color: '#fff',
+                border: 'none', cursor: 'pointer', borderRadius: 'var(--r-md)', padding: '15px',
+                font: '600 15px/1 var(--font-sans)', boxShadow: 'var(--sh-1)' }}>{submitLabel}</button>
+            )}
+            {onDelete && (
+              <button onClick={onDelete} style={{ width: '100%', marginTop: 10, background: 'transparent',
+                color: '#B6543F', border: '1px solid #B6543F', cursor: 'pointer', borderRadius: 'var(--r-md)',
+                padding: '13px', font: '500 14px/1 var(--font-sans)' }}>Usuń</button>
+            )}
+          </div>
         )}
       </div>
     </div>

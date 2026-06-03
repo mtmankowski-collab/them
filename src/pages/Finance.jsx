@@ -8,7 +8,8 @@ const CATS = ['Jedzenie','Restauracje','Auto','Gaba','Kuba','Ubrania','Rozrywka'
 const CAT_COLORS = { Jedzenie:'var(--a)', Restauracje:'var(--a-deep)', Auto:'var(--b)', Gaba:'var(--ink)', Kuba:'var(--b-deep)', Ubrania:'var(--a-soft-2)', Rozrywka:'var(--ink-2)', Inne:'var(--ink-3)' }
 const CAT_ICON = { Jedzenie:'cart', Restauracje:'cup', Auto:'car', Gaba:'toy', Kuba:'toy', Ubrania:'tag', Rozrywka:'sparkle', Inne:'receipt' }
 
-function monthKey(date) { return date.toISOString().slice(0,7) }
+const MIN_MONTH = '2026-06'
+function monthKey(date) { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}` }
 function monthLabel(key) {
   const [y, m] = key.split('-')
   const d = new Date(parseInt(y), parseInt(m)-1, 1)
@@ -29,7 +30,7 @@ export default function Finance() {
   const now = new Date()
   const curMonth = monthKey(now)
 
-  const [mode, setMode] = useState('bills')
+  const [mode, setMode] = useState('expenses')
   const [expenses, setExpenses] = useState([])
   const [bills, setBills] = useState([])
   const [addOpen, setAddOpen] = useState(false)
@@ -148,9 +149,11 @@ export default function Finance() {
         <>
           {/* Month navigation */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 8 }}>
-            <button onClick={() => setExpMonth(prev => addMonths(prev, -1))} style={{ display: 'flex', alignItems: 'center', gap: 5,
-              background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-pill)', padding: '7px 13px',
-              font: '500 12px/1 var(--font-sans)', color: 'var(--ink-2)', cursor: 'pointer' }}>
+            <button onClick={() => setExpMonth(prev => addMonths(prev, -1))} disabled={expMonth <= MIN_MONTH}
+              style={{ display: 'flex', alignItems: 'center', gap: 5,
+                background: expMonth <= MIN_MONTH ? 'transparent' : 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-pill)', padding: '7px 13px',
+                font: '500 12px/1 var(--font-sans)', color: expMonth <= MIN_MONTH ? 'var(--ink-3)' : 'var(--ink-2)',
+                cursor: expMonth <= MIN_MONTH ? 'default' : 'pointer', opacity: expMonth <= MIN_MONTH ? 0.4 : 1 }}>
               <Icon name="back" size={14} color="var(--ink-3)" />Poprzedni
             </button>
             <span style={{ font: '500 13px/1 var(--font-sans)', color: isCurrentMonth ? 'var(--a)' : 'var(--ink-2)', whiteSpace: 'nowrap' }}>
