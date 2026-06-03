@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
 import { Card, ScreenHead, SectionTitle, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, ChipPicker } from '../components/ui'
+import { supabase } from '../lib/supabase'
 
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
 const LS_KEY = 'them_birthdays'
@@ -13,17 +14,31 @@ export default function Birthdays({ onBack }) {
   const [f, setF] = useState({ name: '', date: '', rel: 'Rodzina', year: '' })
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(LS_KEY))
-      setBirthdays(saved || [])
-    } catch {
-      setBirthdays([])
-    }
+    loadBirthdays()
   }, [])
 
-  function save(updated) {
-    setBirthdays(updated)
-    localStorage.setItem(LS_KEY, JSON.stringify(updated))
+  async function loadBirthdays() {
+    const { data } = await supabase.from('birthdays').select('*').order('created_at')
+    if (data) {
+      setBirthdays(data)
+      syncToLocalStorage(data)
+      // Migrate old localStorage entries if Supabase is empty
+      if (data.length === 0) {
+        try {
+          const old = JSON.parse(localStorage.getItem(LS_KEY)) || []
+          if (old.length > 0) {
+            const { data: inserted } = await supabase.from('birthdays').insert(
+              old.map(b => ({ id: b.id, name: b.name, date: b.date, rel: b.rel || 'Inne', year: b.year || null }))
+            ).select()
+            if (inserted) { setBirthdays(inserted); syncToLocalStorage(inserted) }
+          }
+        } catch {}
+      }
+    }
+  }
+
+  function syncToLocalStorage(data) {
+    localStorage.setItem(LS_KEY, JSON.stringify(data))
     window.dispatchEvent(new CustomEvent('birthdaysChanged'))
   }
 
@@ -39,23 +54,33 @@ export default function Birthdays({ onBack }) {
     setAddOpen(true)
   }
 
-  function submit() {
+  async function submit() {
     if (!f.name.trim() || !f.date.trim()) return
+    const record = { name: f.name.trim(), date: f.date.trim(), rel: f.rel, year: f.year ? parseInt(f.year) : null }
     if (editItem) {
-      const updated = birthdays.map(b => b.id === editItem.id
-        ? { ...b, name: f.name.trim(), date: f.date.trim(), rel: f.rel, year: f.year ? parseInt(f.year) : undefined }
-        : b)
-      save(updated)
+      const { data } = await supabase.from('birthdays').update(record).eq('id', editItem.id).select()
+      if (data) {
+        const updated = birthdays.map(b => b.id === editItem.id ? data[0] : b)
+        setBirthdays(updated)
+        syncToLocalStorage(updated)
+      }
     } else {
-      const updated = [...birthdays, { id: Date.now(), name: f.name.trim(), date: f.date.trim(), rel: f.rel, year: f.year ? parseInt(f.year) : undefined }]
-      save(updated)
+      const { data } = await supabase.from('birthdays').insert({ id: Date.now(), ...record }).select().single()
+      if (data) {
+        const updated = [...birthdays, data]
+        setBirthdays(updated)
+        syncToLocalStorage(updated)
+      }
     }
     setAddOpen(false)
     setEditItem(null)
   }
 
-  function deleteItem() {
-    save(birthdays.filter(b => b.id !== editItem.id))
+  async function deleteItem() {
+    await supabase.from('birthdays').delete().eq('id', editItem.id)
+    const updated = birthdays.filter(b => b.id !== editItem.id)
+    setBirthdays(updated)
+    syncToLocalStorage(updated)
     setAddOpen(false)
     setEditItem(null)
   }

@@ -3,6 +3,7 @@ import Icon from '../components/Icon'
 import { Avatar, Card, ScreenHead, SectionTitle, Sheet, Field, TextInput } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { requestNotificationPermission } from '../lib/notifications'
+import { subscribeToPush } from '../lib/push'
 
 const SERIF = "'Bodoni Moda', Georgia, serif"
 
@@ -27,6 +28,7 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
   async function enableNotifications() {
     const granted = await requestNotificationPermission()
     setNotifStatus(granted ? 'granted' : 'denied')
+    if (granted) subscribeToPush()
   }
 
   function openPinSheet() {

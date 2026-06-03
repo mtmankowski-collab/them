@@ -3,6 +3,7 @@ import Icon from '../components/Icon'
 import { PersonDot, Card, ScreenHead, SectionTitle, navBtn, Sheet, Field, TextInput, PersonPicker } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { notifyNewShoppingItem } from '../lib/notifications'
+import { sendPush } from '../lib/push'
 
 export default function Shopping({ onBack }) {
   const [items, setItems] = useState([])
@@ -36,6 +37,8 @@ export default function Shopping({ onBack }) {
     if (data) {
       setItems(prev => [data, ...prev])
       notifyNewShoppingItem(f.name.trim(), f.added_by)
+      const who = f.added_by === 'a' ? 'Maniek' : f.added_by === 'b' ? 'Ula' : 'Ktoś'
+      sendPush('🛒 Nowy produkt na liście', `${who} dodał/a: ${f.name.trim()}`)
     }
     setAddOpen(false)
     setF({ name: '', qty: '', added_by: 'a' })

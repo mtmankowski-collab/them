@@ -3,7 +3,8 @@ import Icon from '../components/Icon'
 import { PersonDot, Card, ScreenHead, EmptyState, SectionTitle, AddBtn, navBtn, navBtnSm, Sheet, Field, TextInput, PersonPicker, ChipPicker } from '../components/ui'
 import { Avatar } from '../components/ui'
 import { supabase, personColor } from '../lib/supabase'
-import { scheduleUpcomingEventNotifications, notifyNewEvent } from '../lib/notifications'
+import { scheduleUpcomingEventNotifications } from '../lib/notifications'
+import { sendPush } from '../lib/push'
 
 const DAYS = ['Pn','Wt','Śr','Cz','Pt','So','Nd']
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
@@ -106,8 +107,10 @@ export default function Calendar({ onGoBirthdays }) {
       const bdMonth = String(evMonth + 1).padStart(2, '0')
       const bdDate = `${bdDay}.${bdMonth}`
       try {
+        const id = Date.now()
+        await supabase.from('birthdays').insert({ id, name: f.title.trim(), date: bdDate, rel: 'Inne', year: null })
         const existing = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
-        const updated = [...existing, { id: Date.now(), name: f.title.trim(), date: bdDate, rel: 'Inne', year: undefined }]
+        const updated = [...existing, { id, name: f.title.trim(), date: bdDate, rel: 'Inne' }]
         localStorage.setItem(LS_BIRTHDAYS, JSON.stringify(updated))
         window.dispatchEvent(new CustomEvent('birthdaysChanged'))
       } catch {}
@@ -130,7 +133,8 @@ export default function Calendar({ onGoBirthdays }) {
         }
         const selDate = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
         if (date === selDate) setDayEvs(prev => [...prev, data].sort((a,b) => (a.time_start||'').localeCompare(b.time_start||'')))
-        notifyNewEvent(f.title, date, f.time)
+        const timeLabel = f.allDay ? 'cały dzień' : f.time
+        sendPush(`📅 Nowe wydarzenie`, `${f.title} · ${date} · ${timeLabel}`)
         scheduleUpcomingEventNotifications([data])
       }
     }
@@ -171,14 +175,14 @@ export default function Calendar({ onGoBirthdays }) {
     setBdEditOpen(true)
   }
 
-  function submitBdEdit() {
+  async function submitBdEdit() {
     if (!bdF.name.trim() || !bdF.day) return
     const dateStr = `${String(bdF.day).padStart(2,'0')}.${String(bdF.month + 1).padStart(2,'0')}`
+    const record = { name: bdF.name.trim(), date: dateStr, rel: bdF.rel, year: bdF.year ? parseInt(bdF.year) : null }
+    await supabase.from('birthdays').update(record).eq('id', bdEditItem.id)
     try {
       const existing = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
-      const updated = existing.map(b => b.id === bdEditItem.id
-        ? { ...b, name: bdF.name.trim(), date: dateStr, rel: bdF.rel, year: bdF.year ? parseInt(bdF.year) : undefined }
-        : b)
+      const updated = existing.map(b => b.id === bdEditItem.id ? { ...b, ...record } : b)
       localStorage.setItem(LS_BIRTHDAYS, JSON.stringify(updated))
       window.dispatchEvent(new CustomEvent('birthdaysChanged'))
     } catch {}
@@ -186,8 +190,9 @@ export default function Calendar({ onGoBirthdays }) {
     setBdEditItem(null)
   }
 
-  function deleteBd() {
+  async function deleteBd() {
     if (!bdEditItem) return
+    await supabase.from('birthdays').delete().eq('id', bdEditItem.id)
     try {
       const existing = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
       localStorage.setItem(LS_BIRTHDAYS, JSON.stringify(existing.filter(b => b.id !== bdEditItem.id)))
