@@ -336,7 +336,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
           {dayEvs.map(e => (
             <Card key={e.id} pad={0} style={{ overflow: 'hidden', cursor: 'pointer' }} onClick={() => openEdit(e)}>
               <div style={{ display: 'flex', alignItems: 'stretch' }}>
-                <div style={{ width: 5, background: personColor(e.owner) }} />
+                <div style={{ width: 5, background: e.owner === 'shared' ? 'linear-gradient(180deg, var(--a) 0 50%, var(--b) 50% 100%)' : personColor(e.owner) }} />
                 <div style={{ padding: '13px 15px', flex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
                   {e.time_start && <>
                     <div style={{ textAlign: 'center', flexShrink: 0 }}>

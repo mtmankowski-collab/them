@@ -103,7 +103,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
             <div key={e.id} style={{ display: 'flex', gap: 13, padding: '11px 0',
               borderTop: i ? '1px solid var(--line)' : 'none', alignItems: 'center' }}>
               {e.time_start && <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)', width: 38, flexShrink: 0 }}>{e.time_start.slice(0,5)}</span>}
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: personColor(e.owner), flexShrink: 0 }} />
+              <PersonDot who={e.owner} size={7} />
               <span style={{ flex: 1, font: '500 14.5px/1.25 var(--font-sans)', color: 'var(--ink)' }}>{e.title}</span>
               <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>{e.location}</span>
             </div>
@@ -242,7 +242,9 @@ function WeekView() {
                 {items.length ? items.map((ev, j) => (
                   <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '3.5px 0' }}>
                     {ev.time_start && <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--ink-2)', width: 34, flexShrink: 0 }}>{ev.time_start.slice(0,5)}</span>}
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: ev.isBirthday ? '#4A90D9' : personColor(ev.owner), flexShrink: 0 }} />
+                    {ev.isBirthday
+                      ? <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4A90D9', flexShrink: 0, display: 'inline-block' }} />
+                      : <PersonDot who={ev.owner} size={6} />}
                     <span style={{ flex: 1, font: '500 13.5px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{ev.title}</span>
                   </div>
                 )) : (
