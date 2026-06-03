@@ -4,6 +4,7 @@ import { PersonDot, Card, Segmented, ScreenHead, EmptyState, AddBtn, StarRate, S
 import { supabase } from '../lib/supabase'
 
 const SERIF = "'Bodoni Moda', Georgia, serif"
+const PLATFORMS = ['Netflix','HBO Max','Disney+','Prime','Skyshowtime','Apple TV','Inne']
 
 export default function Films() {
   const [tab, setTab] = useState('toWatch')
@@ -47,11 +48,14 @@ export default function Films() {
       await supabase.from('movies').update({ title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by }).eq('id', editItem.id)
       setFilms(prev => prev.map(m => m.id === editItem.id ? { ...m, title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by } : m))
     } else {
-      const { data } = await supabase.from('movies').insert({
+      const { data, error } = await supabase.from('movies').insert({
         title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by,
         status: 'to_watch', rating: 0,
       }).select().single()
-      if (data) setFilms(prev => [data, ...prev])
+      if (data) {
+        setFilms(prev => [data, ...prev])
+        setTab('toWatch')
+      }
     }
     setAddOpen(false)
     setEditItem(null)
@@ -122,7 +126,7 @@ export default function Films() {
         onDelete={editItem ? deleteFilm : undefined}>
         <Field label="Tytuł"><TextInput value={f.title} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Dune: Part Two" /></Field>
         <Field label="Typ"><ChipPicker value={f.type} onChange={v => setF(p=>({...p,type:v}))} options={[{value:'film',label:'Film'},{value:'serial',label:'Serial'}]} /></Field>
-        <Field label="Platforma"><ChipPicker value={f.platform} onChange={v => setF(p=>({...p,platform:v}))} options={['Netflix','HBO Max','Disney+','Prime','Kino']} /></Field>
+        <Field label="Platforma"><ChipPicker value={f.platform} onChange={v => setF(p=>({...p,platform:v}))} options={PLATFORMS} /></Field>
         <Field label="Kto dodaje"><PersonPicker value={f.added_by} onChange={v => setF(p=>({...p,added_by:v}))} /></Field>
       </Sheet>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Icon from '../components/Icon'
 import { PersonDot, Card, ScreenHead, EmptyState, SectionTitle, AddBtn, navBtn, navBtnSm, Sheet, Field, TextInput, PersonPicker } from '../components/ui'
 import { Avatar } from '../components/ui'
@@ -6,6 +6,24 @@ import { supabase, personColor } from '../lib/supabase'
 
 const DAYS = ['Pn','Wt','Śr','Cz','Pt','So','Nd']
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
+const LS_BIRTHDAYS = 'them_birthdays'
+
+function loadBirthdayMarks(month) {
+  try {
+    const bdays = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
+    const marks = {}
+    bdays.forEach(b => {
+      const parts = b.date.split('.')
+      const mm = parseInt(parts[1])
+      const dd = parseInt(parts[0])
+      if (mm === month + 1) {
+        if (!marks[dd]) marks[dd] = []
+        marks[dd].push({ who: 'birthday' })
+      }
+    })
+    return marks
+  } catch { return {} }
+}
 
 export default function Calendar({ onGoBirthdays }) {
   const now = new Date()
@@ -13,18 +31,32 @@ export default function Calendar({ onGoBirthdays }) {
   const [month, setMonth] = useState(now.getMonth())
   const [sel, setSel] = useState(now.getDate())
   const [marks, setMarks] = useState({})
+  const [birthdayMarks, setBirthdayMarks] = useState({})
   const [dayEvs, setDayEvs] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '' })
 
+  const touchStartX = useRef(null)
+
   const firstDay = new Date(year, month, 1).getDay()
   const offset = firstDay === 0 ? 6 : firstDay - 1
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
+  function prevMonth() { if (month === 0) { setMonth(11); setYear(y => y-1) } else setMonth(m => m-1) }
+  function nextMonth() { if (month === 11) { setMonth(0); setYear(y => y+1) } else setMonth(m => m+1) }
+
+  function handleTouchStart(e) { touchStartX.current = e.touches[0].clientX }
+  function handleTouchEnd(e) {
+    if (touchStartX.current === null) return
+    const diff = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 50) diff > 0 ? nextMonth() : prevMonth()
+    touchStartX.current = null
+  }
+
   useEffect(() => {
     const from = `${year}-${String(month+1).padStart(2,'0')}-01`
-    const to = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`
+    const to = `${year}-${String(month+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`
     supabase.from('events').select('*').gte('date', from).lte('date', to).then(({ data }) => {
       if (!data) return
       const m = {}
@@ -35,6 +67,7 @@ export default function Calendar({ onGoBirthdays }) {
       })
       setMarks(m)
     })
+    setBirthdayMarks(loadBirthdayMarks(month))
   }, [year, month])
 
   useEffect(() => {
@@ -42,21 +75,23 @@ export default function Calendar({ onGoBirthdays }) {
     supabase.from('events').select('*').eq('date', date).order('time_start').then(({ data }) => setDayEvs(data || []))
   }, [sel, year, month])
 
-  function prevMonth() { if (month === 0) { setMonth(11); setYear(y => y-1) } else setMonth(m => m-1) }
-  function nextMonth() { if (month === 11) { setMonth(0); setYear(y => y+1) } else setMonth(m => m+1) }
-
   async function submitEvent() {
     if (!f.title.trim()) return
     const date = `${year}-${String(month+1).padStart(2,'0')}-${String(parseInt(f.day) || sel).padStart(2,'0')}`
     if (editItem) {
       await supabase.from('events').update({ title: f.title, time_start: f.time + ':00', location: f.location, owner: f.owner }).eq('id', editItem.id)
+      setDayEvs(prev => prev.map(e => e.id === editItem.id ? { ...e, title: f.title, time_start: f.time + ':00', location: f.location, owner: f.owner } : e))
     } else {
-      await supabase.from('events').insert({ title: f.title, date, time_start: f.time + ':00', location: f.location, owner: f.owner })
+      const { data } = await supabase.from('events').insert({ title: f.title, date, time_start: f.time + ':00', location: f.location, owner: f.owner }).select().single()
+      if (data) {
+        const d = parseInt(date.split('-')[2])
+        setMarks(prev => { const m = { ...prev }; if (!m[d]) m[d] = []; m[d] = [...m[d], { who: f.owner }]; return m })
+        const selDate = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
+        if (date === selDate) setDayEvs(prev => [...prev, data].sort((a,b) => (a.time_start||'').localeCompare(b.time_start||'')))
+      }
     }
     setAddOpen(false)
     setEditItem(null)
-    const d2 = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
-    supabase.from('events').select('*').eq('date', d2).order('time_start').then(({ data }) => setDayEvs(data || []))
   }
 
   function openEdit(ev) {
@@ -68,12 +103,11 @@ export default function Calendar({ onGoBirthdays }) {
   async function deleteEvent() {
     if (!editItem) return
     await supabase.from('events').delete().eq('id', editItem.id)
+    setDayEvs(prev => prev.filter(e => e.id !== editItem.id))
     setAddOpen(false)
     setEditItem(null)
-    const d = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
-    supabase.from('events').select('*').eq('date', d).order('time_start').then(({ data }) => setDayEvs(data || []))
     const from = `${year}-${String(month+1).padStart(2,'0')}-01`
-    const to = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`
+    const to = `${year}-${String(month+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`
     supabase.from('events').select('*').gte('date', from).lte('date', to).then(({ data }) => {
       if (!data) return
       const m = {}
@@ -87,6 +121,17 @@ export default function Calendar({ onGoBirthdays }) {
     setF({ title: '', time: '12:00', owner: 'shared', location: '' })
     setAddOpen(true)
   }
+
+  // Birthday events for selected day
+  const selBirthdays = (() => {
+    try {
+      const bdays = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
+      return bdays.filter(b => {
+        const parts = b.date.split('.')
+        return parseInt(parts[1]) === month + 1 && parseInt(parts[0]) === sel
+      })
+    } catch { return [] }
+  })()
 
   const selDateLabel = `${sel} ${MONTHS[month]}`
 
@@ -105,7 +150,8 @@ export default function Calendar({ onGoBirthdays }) {
         <button style={navBtnSm} onClick={nextMonth}><Icon name="chevron" size={18} color="var(--ink-2)" /></button>
       </div>
 
-      <Card pad={14} style={{ marginBottom: 16 }}>
+      <Card pad={14} style={{ marginBottom: 16, touchAction: 'pan-y' }}
+        onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: 8 }}>
           {DAYS.map(d => <div key={d} style={{ textAlign: 'center', font: '500 11px/1 var(--font-sans)', color: 'var(--ink-3)', letterSpacing: '.04em' }}>{d}</div>)}
         </div>
@@ -113,16 +159,20 @@ export default function Calendar({ onGoBirthdays }) {
           {Array(offset).fill(null).map((_, i) => <div key={'e'+i} />)}
           {Array.from({ length: daysInMonth }, (_, i) => i+1).map(d => {
             const ev = marks[d] || []
+            const bd = birthdayMarks[d] || []
             const isSel = d === sel
             const isToday = d === now.getDate() && month === now.getMonth() && year === now.getFullYear()
+            const allDots = [...ev.slice(0,2), ...bd.slice(0,1)]
             return (
               <button key={d} onClick={() => setSel(d)} style={{ aspectRatio: '1', border: isToday && !isSel ? '1.5px solid var(--a)' : 'none',
                 cursor: 'pointer', background: isSel ? 'var(--ink)' : 'transparent', borderRadius: 12,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '4px 0' }}>
                 <span style={{ font: '500 14px/1 var(--font-sans)', color: isSel ? 'var(--cream)' : 'var(--ink)' }}>{d}</span>
                 <span style={{ display: 'flex', gap: 2.5, height: 5 }}>
-                  {ev.slice(0,3).map((e, i) => <span key={i} style={{ width: 5, height: 5, borderRadius: '50%',
+                  {ev.slice(0,2).map((e, i) => <span key={'e'+i} style={{ width: 5, height: 5, borderRadius: '50%',
                     background: isSel ? 'var(--cream)' : personColor(e.who) }} />)}
+                  {bd.length > 0 && <span style={{ width: 5, height: 5, borderRadius: '50%',
+                    background: isSel ? 'var(--cream)' : 'var(--star)' }} />}
                 </span>
               </button>
             )
@@ -130,16 +180,33 @@ export default function Calendar({ onGoBirthdays }) {
         </div>
       </Card>
 
-      <div style={{ display: 'flex', gap: 16, marginBottom: 18, padding: '0 2px' }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 18, padding: '0 2px', flexWrap: 'wrap' }}>
         <Legend who="a" label="Maniek" />
         <Legend who="b" label="Ula" />
         <Legend who="shared" label="Wspólne" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--star)', display: 'inline-block' }} />
+          <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-2)' }}>Urodziny</span>
+        </div>
       </div>
 
       <SectionTitle title={selDateLabel} />
+
+      {selBirthdays.map(b => (
+        <Card key={b.id} pad={13} style={{ marginBottom: 8, borderLeft: '4px solid var(--star)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 18 }}>🎂</span>
+            <div>
+              <div style={{ font: '500 14.5px/1 var(--font-sans)', color: 'var(--ink)' }}>{b.name}</div>
+              <div style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-2)', marginTop: 3 }}>{b.rel}{b.year ? ` · kończy ${new Date().getFullYear() - b.year} lat` : ''}</div>
+            </div>
+          </div>
+        </Card>
+      ))}
+
       {dayEvs.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {dayEvs.map((e, i) => (
+          {dayEvs.map(e => (
             <Card key={e.id} pad={0} style={{ overflow: 'hidden', cursor: 'pointer' }} onClick={() => openEdit(e)}>
               <div style={{ display: 'flex', alignItems: 'stretch' }}>
                 <div style={{ width: 5, background: personColor(e.owner) }} />
@@ -159,10 +226,10 @@ export default function Calendar({ onGoBirthdays }) {
             </Card>
           ))}
         </div>
-      ) : (
+      ) : !selBirthdays.length ? (
         <EmptyState icon="calendar" title="Wolny dzień" sub="Brak wydarzeń. Dodajcie coś nowego."
           action={<AddBtn label="Dodaj wydarzenie" onClick={openAdd} />} />
-      )}
+      ) : null}
 
       <Sheet open={addOpen} title={editItem ? 'Edytuj wydarzenie' : 'Nowe wydarzenie'}
         onClose={() => { setAddOpen(false); setEditItem(null) }}
