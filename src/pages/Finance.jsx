@@ -253,9 +253,7 @@ export default function Finance() {
                   </button>
                   <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => openEditBill(b)}>
                     <div style={{ font: '500 14.5px/1.1 var(--font-sans)', color: 'var(--ink)' }}>{b.title}</div>
-                    <div style={{ font: '400 12px/1 var(--font-sans)', color: b.paid ? 'var(--ink-3)' : 'var(--ink-2)', marginTop: 4 }}>
-                      {b.paid ? 'Opłacone' : `Termin ${b.due_day} ${now.toLocaleString('pl', { month: 'short' })}`}
-                    </div>
+                    {b.paid && <div style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 4 }}>Opłacone</div>}
                   </div>
                   <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', whiteSpace: 'nowrap' }}>
                     {b.amount?.toLocaleString('pl')} zł
@@ -281,10 +279,7 @@ export default function Finance() {
           <Field label="Kto płacił"><PersonPicker value={f.added_by||'a'} onChange={v => setF(p=>({...p,added_by:v}))} /></Field>
         </> : <>
           <Field label="Nazwa opłaty"><TextInput value={f.title||''} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Prąd" /></Field>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}><Field label="Kwota"><TextInput value={f.amount||''} onChange={v => setF(p=>({...p,amount:v}))} type="number" placeholder="0" prefix="zł" /></Field></div>
-            <div style={{ width: 120 }}><Field label="Dzień miesiąca"><TextInput value={f.due_day||''} onChange={v => setF(p=>({...p,due_day:v}))} type="number" placeholder="10" /></Field></div>
-          </div>
+          <Field label="Kwota"><TextInput value={f.amount||''} onChange={v => setF(p=>({...p,amount:v}))} type="number" placeholder="0" prefix="zł" /></Field>
         </>}
       </Sheet>
     </div>
