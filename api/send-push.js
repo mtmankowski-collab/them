@@ -21,8 +21,9 @@ export default async function handler(req, res) {
   const { title, body, tag } = req.body
   if (!title) return res.status(400).json({ error: 'title required' })
 
-  const { data: subs } = await supabase.from('push_subscriptions').select('*')
-  if (!subs?.length) return res.json({ sent: 0 })
+  const { data: subs, error: subsError } = await supabase.from('push_subscriptions').select('*')
+  console.log('push_subscriptions query:', { count: subs?.length, error: subsError?.message })
+  if (!subs?.length) return res.json({ sent: 0, subsError: subsError?.message, debug: 'no subs found' })
 
   const payload = JSON.stringify({ title, body, tag: tag || 'them' })
   const results = await Promise.allSettled(
