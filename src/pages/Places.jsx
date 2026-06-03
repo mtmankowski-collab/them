@@ -10,7 +10,7 @@ export default function Places({ onBack }) {
   const [cat, setCat] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ name: '', category: 'Jedzenie', city: '', notes: '' })
+  const [f, setF] = useState({ name: '', category: 'Jedzenie', city: '', notes: '', mapUrl: '' })
 
   useEffect(() => {
     supabase.from('places').select('*').order('rating', { ascending: false }).then(({ data }) => setPlaces(data || []))
@@ -20,13 +20,13 @@ export default function Places({ onBack }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ name: '', category: 'Jedzenie', city: '', notes: '' })
+    setF({ name: '', category: 'Jedzenie', city: '', notes: '', mapUrl: '' })
     setAddOpen(true)
   }
 
   function openEdit(p) {
     setEditItem(p)
-    setF({ name: p.name, category: p.category || 'Jedzenie', city: p.city || '', notes: p.notes || '' })
+    setF({ name: p.name, category: p.category || 'Jedzenie', city: p.city || '', notes: p.notes || '', mapUrl: p.mapUrl || '' })
     setAddOpen(true)
   }
 
@@ -41,14 +41,16 @@ export default function Places({ onBack }) {
       }).select().single()
       if (data) setPlaces(prev => [...prev, data])
     }
-    setAddOpen(false); setEditItem(null)
+    setAddOpen(false)
+    setEditItem(null)
   }
 
   async function deleteItem() {
     if (!editItem) return
     await supabase.from('places').delete().eq('id', editItem.id)
     setPlaces(prev => prev.filter(p => p.id !== editItem.id))
-    setAddOpen(false); setEditItem(null)
+    setAddOpen(false)
+    setEditItem(null)
   }
 
   return (
@@ -83,7 +85,13 @@ export default function Places({ onBack }) {
                   {p.notes && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>{p.notes}</div>}
                   <Stars value={p.rating || 0} size={13} />
                 </div>
-                <Icon name="edit" size={17} color="var(--ink-3)" style={{ marginTop: 2, flexShrink: 0 }} />
+                {p.mapUrl && (
+                  <a href={p.mapUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                    style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--b-soft)', border: '1px solid var(--line)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, textDecoration: 'none' }}>
+                    <Icon name="map" size={18} color="var(--b)" />
+                  </a>
+                )}
               </div>
             </Card>
           ))}
@@ -93,13 +101,11 @@ export default function Places({ onBack }) {
           action={<AddBtn label="Dodaj miejsce" onClick={openAdd} />} />
       )}
 
-      <Sheet open={addOpen}
-        title={editItem ? 'Edytuj miejsce' : 'Nowe miejsce'}
+      <Sheet open={addOpen} title={editItem ? 'Edytuj miejsce' : 'Nowe miejsce'}
         onClose={() => { setAddOpen(false); setEditItem(null) }}
-        onSubmit={submit}
-        submitLabel={editItem ? 'Zapisz zmiany' : 'Zapisz miejsce'}
-        accent="var(--a-deep)"
-        onDelete={editItem ? deleteItem : undefined}>
+        onSubmit={submit} submitLabel={editItem ? 'Zapisz zmiany' : 'Zapisz miejsce'}
+        onDelete={editItem ? deleteItem : undefined}
+        accent="var(--a-deep)">
         <Field label="Nazwa"><TextInput value={f.name} onChange={v => setF(p=>({...p,name:v}))} placeholder="np. Bistro Warzywa" /></Field>
         <Field label="Kategoria"><ChipPicker value={f.category} onChange={v => setF(p=>({...p,category:v}))} options={CATS} /></Field>
         <Field label="Miasto / dzielnica"><TextInput value={f.city} onChange={v => setF(p=>({...p,city:v}))} placeholder="Mokotów" /></Field>

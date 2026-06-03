@@ -29,21 +29,10 @@ export default function Films() {
     setFilms(prev => prev.map(m => m.id === id ? { ...m, rating: val } : m))
   }
 
-  async function addFilm() {
-    if (!f.title.trim()) return
-    const { data } = await supabase.from('movies').insert({
-      title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by,
-      status: 'to_watch', rating: 0,
-    }).select().single()
-    if (data) setFilms(prev => [data, ...prev])
-    setAddOpen(false); setEditItem(null)
-  }
-
-  async function deleteFilm() {
-    if (!editItem) return
-    await supabase.from('movies').delete().eq('id', editItem.id)
-    setFilms(prev => prev.filter(m => m.id !== editItem.id))
-    setAddOpen(false); setEditItem(null)
+  function openAdd() {
+    setEditItem(null)
+    setF({ title: '', type: 'film', platform: 'Netflix', added_by: 'a' })
+    setAddOpen(true)
   }
 
   function openEdit(m) {
@@ -52,17 +41,34 @@ export default function Films() {
     setAddOpen(true)
   }
 
-  async function submitEdit() {
-    if (!f.title.trim() || !editItem) return
-    await supabase.from('movies').update({ title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by }).eq('id', editItem.id)
-    setFilms(prev => prev.map(m => m.id === editItem.id ? { ...m, title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by } : m))
-    setAddOpen(false); setEditItem(null)
+  async function submit() {
+    if (!f.title.trim()) return
+    if (editItem) {
+      await supabase.from('movies').update({ title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by }).eq('id', editItem.id)
+      setFilms(prev => prev.map(m => m.id === editItem.id ? { ...m, title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by } : m))
+    } else {
+      const { data } = await supabase.from('movies').insert({
+        title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by,
+        status: 'to_watch', rating: 0,
+      }).select().single()
+      if (data) setFilms(prev => [data, ...prev])
+    }
+    setAddOpen(false)
+    setEditItem(null)
+  }
+
+  async function deleteFilm() {
+    if (!editItem) return
+    await supabase.from('movies').delete().eq('id', editItem.id)
+    setFilms(prev => prev.filter(m => m.id !== editItem.id))
+    setAddOpen(false)
+    setEditItem(null)
   }
 
   return (
     <div className="screen" style={{ position: 'relative' }}>
       <ScreenHead sub="Wspólna lista" title="Filmy i seriale" right={
-        <button style={navBtn} onClick={() => { setEditItem(null); setF({ title:'', type:'film', platform:'Netflix', added_by:'a' }); setAddOpen(true) }}>
+        <button style={navBtn} onClick={openAdd}>
           <Icon name="plus" size={20} color="var(--ink)" />
         </button>
       } />
@@ -76,22 +82,24 @@ export default function Films() {
       {list.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
           {list.map(m => (
-            <Card key={m.id} pad={14}>
+            <Card key={m.id} pad={14} onClick={() => openEdit(m)} style={{ cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }} onClick={() => openEdit(m)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 7 }}>
                     <span style={{ font: `500 16px/1.15 ${SERIF}`, color: 'var(--ink)' }}>{m.title}</span>
                     <TypeBadge type={m.type} />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <PersonDot who={m.added_by || 'shared'} size={6} />
-                    <span style={{ font: '400 12.5px/1 var(--font-sans)', color: 'var(--ink-2)', whiteSpace: 'nowrap' }}>{m.platform}</span>
+                    <span style={{ font: '400 12.5px/1 var(--font-sans)', color: 'var(--ink-2)', whiteSpace: 'nowrap' }}>
+                      {m.platform}
+                    </span>
                   </div>
                 </div>
                 {tab === 'watched' ? (
-                  <StarRate value={m.rating || 0} onChange={v => rate(m.id, v)} size={19} />
+                  <StarRate value={m.rating || 0} onChange={v => { rate(m.id, v) }} size={19} />
                 ) : (
-                  <button onClick={() => markWatched(m)} style={{ display: 'flex', alignItems: 'center', gap: 6,
+                  <button onClick={e => { e.stopPropagation(); markWatched(m) }} style={{ display: 'flex', alignItems: 'center', gap: 6,
                     background: 'var(--cream-warm)', border: '1px solid var(--line)', cursor: 'pointer',
                     borderRadius: 'var(--r-pill)', padding: '8px 13px', font: '500 12px/1 var(--font-sans)', color: 'var(--ink)', flexShrink: 0 }}>
                     <Icon name="check" size={15} color="var(--ink-2)" stroke={2} />Obejrzane
@@ -105,14 +113,12 @@ export default function Films() {
         <EmptyState icon="film"
           title={tab === 'toWatch' ? 'Lista pusta' : 'Nic jeszcze obejrzane'}
           sub={tab === 'toWatch' ? 'Dodajcie film lub serial, który chcecie razem obejrzeć.' : 'Obejrzane tytuły pojawią się tutaj z oceną.'}
-          action={tab === 'toWatch' ? <AddBtn label="Dodaj tytuł" onClick={() => { setEditItem(null); setAddOpen(true) }} /> : null} />
+          action={tab === 'toWatch' ? <AddBtn label="Dodaj tytuł" onClick={openAdd} /> : null} />
       )}
 
-      <Sheet open={addOpen}
-        title={editItem ? 'Edytuj tytuł' : 'Dodaj do obejrzenia'}
+      <Sheet open={addOpen} title={editItem ? 'Edytuj tytuł' : 'Dodaj do obejrzenia'}
         onClose={() => { setAddOpen(false); setEditItem(null) }}
-        onSubmit={editItem ? submitEdit : addFilm}
-        submitLabel={editItem ? 'Zapisz' : 'Dodaj tytuł'}
+        onSubmit={submit} submitLabel={editItem ? 'Zapisz zmiany' : 'Dodaj tytuł'}
         onDelete={editItem ? deleteFilm : undefined}>
         <Field label="Tytuł"><TextInput value={f.title} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Dune: Part Two" /></Field>
         <Field label="Typ"><ChipPicker value={f.type} onChange={v => setF(p=>({...p,type:v}))} options={[{value:'film',label:'Film'},{value:'serial',label:'Serial'}]} /></Field>

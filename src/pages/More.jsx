@@ -57,7 +57,6 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
         {[
           { icon: 'bell', label: 'Powiadomienia' },
           { icon: 'lock', label: 'Prywatność i PIN' },
-          { icon: 'settings', label: 'Ustawienia ogólne' },
         ].map((r, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px',
             borderTop: '1px solid var(--line)' }}>

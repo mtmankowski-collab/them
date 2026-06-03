@@ -82,19 +82,18 @@ function Row({ s, onToggle, onRemove, border }) {
   return (
     <div style={{ display: 'flex', gap: 13, padding: '13px 15px', alignItems: 'center',
       borderTop: border ? '1px solid var(--line)' : 'none' }}>
-      <div onClick={() => onToggle(s)} style={{ width: 24, height: 24, borderRadius: 8, flexShrink: 0, cursor: 'pointer',
+      <button onClick={() => onToggle(s)} style={{ width: 24, height: 24, borderRadius: 8, flexShrink: 0,
         border: '1.8px solid ' + (s.done ? 'var(--paid)' : 'var(--line-strong)'),
         background: s.done ? 'var(--paid)' : 'transparent',
         display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {s.done && <Icon name="check" size={15} color="#fff" stroke={2.2} />}
-      </div>
-      <span onClick={() => onToggle(s)} style={{ flex: 1, font: '500 15px/1.1 var(--font-sans)', cursor: 'pointer',
+      </button>
+      <span style={{ flex: 1, font: '500 15px/1.1 var(--font-sans)',
         color: s.done ? 'var(--ink-3)' : 'var(--ink)', textDecoration: s.done ? 'line-through' : 'none' }}>
         {s.title}
       </span>
       <PersonDot who={s.added_by || 'shared'} size={7} />
-      <button onClick={() => onRemove(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer',
-        padding: '4px', lineHeight: 0, flexShrink: 0 }}>
+      <button onClick={() => onRemove(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0, flexShrink: 0 }}>
         <Icon name="close" size={16} color="var(--ink-3)" />
       </button>
     </div>

@@ -39,14 +39,16 @@ export default function Trips({ onBack }) {
       }).select().single()
       if (data) setTrips(prev => [...prev, data])
     }
-    setAddOpen(false); setEditItem(null)
+    setAddOpen(false)
+    setEditItem(null)
   }
 
   async function deleteItem() {
     if (!editItem) return
     await supabase.from('vacations').delete().eq('id', editItem.id)
     setTrips(prev => prev.filter(t => t.id !== editItem.id))
-    setAddOpen(false); setEditItem(null)
+    setAddOpen(false)
+    setEditItem(null)
   }
 
   return (
@@ -58,13 +60,13 @@ export default function Trips({ onBack }) {
       {trips.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {trips.map((t, ti) => {
-            const accent = ACCENTS[ti % ACCENTS.length]
+            const accent = t.accent || ACCENTS[ti % ACCENTS.length]
             return (
               <Card key={t.id} pad={0} style={{ overflow: 'hidden', cursor: 'pointer' }} onClick={() => openEdit(t)}>
                 <div style={{ display: 'flex', alignItems: 'stretch' }}>
                   <div style={{ width: 6, background: accent }} />
                   <div style={{ padding: '16px', flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                       <div>
                         <div style={{ font: `500 20px/1 ${SERIF}`, color: 'var(--ink)' }}>{t.destination}</div>
                         <div style={{ font: '400 13px/1 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>{t.country}</div>
@@ -86,17 +88,13 @@ export default function Trips({ onBack }) {
           action={<AddBtn label="Dodaj cel" onClick={openAdd} />} />
       )}
 
-      <Sheet open={addOpen}
-        title={editItem ? 'Edytuj cel' : 'Nowy cel podróży'}
+      <Sheet open={addOpen} title={editItem ? 'Edytuj podróż' : 'Nowy cel podróży'}
         onClose={() => { setAddOpen(false); setEditItem(null) }}
-        onSubmit={submit}
-        submitLabel={editItem ? 'Zapisz zmiany' : 'Dodaj cel'}
-        accent="var(--b-deep)"
-        onDelete={editItem ? deleteItem : undefined}>
+        onSubmit={submit} submitLabel={editItem ? 'Zapisz zmiany' : 'Dodaj cel'}
+        onDelete={editItem ? deleteItem : undefined}
+        accent="var(--b-deep)">
         <Field label="Miejsce"><TextInput value={f.destination} onChange={v => setF(p=>({...p,destination:v}))} placeholder="np. Barcelona" /></Field>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ flex: 1 }}><Field label="Kraj"><TextInput value={f.country} onChange={v => setF(p=>({...p,country:v}))} placeholder="Hiszpania" /></Field></div>
-        </div>
+        <Field label="Kraj"><TextInput value={f.country} onChange={v => setF(p=>({...p,country:v}))} placeholder="Hiszpania" /></Field>
         <Field label="Z kim"><ChipPicker value={f.tag} onChange={v => setF(p=>({...p,tag:v}))} options={['We dwoje','Z Tosią','Marzenie']} /></Field>
       </Sheet>
     </div>

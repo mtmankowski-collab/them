@@ -5,7 +5,7 @@ import { Avatar } from '../components/ui'
 import { supabase, personColor } from '../lib/supabase'
 
 const DAYS = ['Pn','Wt','Śr','Cz','Pt','So','Nd']
-const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
+const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzeseń','październik','listopad','grudzień']
 
 export default function Calendar({ onGoBirthdays }) {
   const now = new Date()
@@ -22,7 +22,7 @@ export default function Calendar({ onGoBirthdays }) {
   const offset = firstDay === 0 ? 6 : firstDay - 1
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
-  function loadMonth() {
+  useEffect(() => {
     const from = `${year}-${String(month+1).padStart(2,'0')}-01`
     const to = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`
     supabase.from('events').select('*').gte('date', from).lte('date', to).then(({ data }) => {
@@ -35,15 +35,12 @@ export default function Calendar({ onGoBirthdays }) {
       })
       setMarks(m)
     })
-  }
+  }, [year, month])
 
-  function loadDay(d = sel) {
-    const date = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+  useEffect(() => {
+    const date = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
     supabase.from('events').select('*').eq('date', date).order('time_start').then(({ data }) => setDayEvs(data || []))
-  }
-
-  useEffect(() => { loadMonth() }, [year, month])
-  useEffect(() => { loadDay() }, [sel, year, month])
+  }, [sel, year, month])
 
   function prevMonth() { if (month === 0) { setMonth(11); setYear(y => y-1) } else setMonth(m => m-1) }
   function nextMonth() { if (month === 11) { setMonth(0); setYear(y => y+1) } else setMonth(m => m+1) }
@@ -56,21 +53,33 @@ export default function Calendar({ onGoBirthdays }) {
     } else {
       await supabase.from('events').insert({ title: f.title, date, time_start: f.time + ':00', location: f.location, owner: f.owner })
     }
-    setAddOpen(false); setEditItem(null)
-    loadMonth(); loadDay()
-  }
-
-  async function deleteEvent() {
-    if (!editItem) return
-    await supabase.from('events').delete().eq('id', editItem.id)
-    setAddOpen(false); setEditItem(null)
-    loadMonth(); loadDay()
+    setAddOpen(false)
+    setEditItem(null)
+    const d2 = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
+    supabase.from('events').select('*').eq('date', d2).order('time_start').then(({ data }) => setDayEvs(data || []))
   }
 
   function openEdit(ev) {
     setEditItem(ev)
     setF({ title: ev.title, time: ev.time_start?.slice(0,5) || '12:00', owner: ev.owner, location: ev.location || '' })
     setAddOpen(true)
+  }
+
+  async function deleteEvent() {
+    if (!editItem) return
+    await supabase.from('events').delete().eq('id', editItem.id)
+    setAddOpen(false)
+    setEditItem(null)
+    const d = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
+    supabase.from('events').select('*').eq('date', d).order('time_start').then(({ data }) => setDayEvs(data || []))
+    const from = `${year}-${String(month+1).padStart(2,'0')}-01`
+    const to = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`
+    supabase.from('events').select('*').gte('date', from).lte('date', to).then(({ data }) => {
+      if (!data) return
+      const m = {}
+      data.forEach(e => { const d = parseInt(e.date.split('-')[2]); if (!m[d]) m[d] = []; m[d].push({ who: e.owner }) })
+      setMarks(m)
+    })
   }
 
   function openAdd() {
@@ -130,12 +139,14 @@ export default function Calendar({ onGoBirthdays }) {
       <SectionTitle title={selDateLabel} />
       {dayEvs.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {dayEvs.map(e => (
+          {dayEvs.map((e, i) => (
             <Card key={e.id} pad={0} style={{ overflow: 'hidden', cursor: 'pointer' }} onClick={() => openEdit(e)}>
               <div style={{ display: 'flex', alignItems: 'stretch' }}>
                 <div style={{ width: 5, background: personColor(e.owner) }} />
                 <div style={{ padding: '13px 15px', flex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--ink)', flexShrink: 0 }}>{e.time_start?.slice(0,5)}</div>
+                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                    <div style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--ink)' }}>{e.time_start?.slice(0,5)}</div>
+                  </div>
                   <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--line)' }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{e.title}</div>
