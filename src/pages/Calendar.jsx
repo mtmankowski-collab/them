@@ -390,17 +390,17 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
 
         {/* Start date */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ flex: 3 }}>
-            <Field label="Miesiąc">
-              <SelectPill value={f.month} onChange={v => setF(p => ({...p, month: parseInt(v)}))}>
-                {MONTHS.map((m, i) => <option key={i} value={i}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
-              </SelectPill>
-            </Field>
-          </div>
           <div style={{ flex: 2 }}>
             <Field label="Dzień">
               <SelectPill value={parseInt(f.day) || sel} onChange={v => setF(p => ({...p, day: v}))}>
                 {Array.from({ length: new Date(f.year, f.month + 1, 0).getDate() }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+              </SelectPill>
+            </Field>
+          </div>
+          <div style={{ flex: 3 }}>
+            <Field label="Miesiąc">
+              <SelectPill value={f.month} onChange={v => setF(p => ({...p, month: parseInt(v)}))}>
+                {MONTHS.map((m, i) => <option key={i} value={i}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
               </SelectPill>
             </Field>
           </div>
@@ -424,17 +424,17 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
         {/* End date for multi-day events */}
         {f.multiDay && (
           <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ flex: 3 }}>
-              <Field label="Do — miesiąc">
-                <SelectPill value={f.endMonth} onChange={v => setF(p => ({...p, endMonth: parseInt(v)}))}>
-                  {MONTHS.map((m, i) => <option key={i} value={i}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
+            <div style={{ flex: 2 }}>
+              <Field label="Do — dzień">
+                <SelectPill value={parseInt(f.endDay) || sel} onChange={v => setF(p => ({...p, endDay: v}))}>
+                  {Array.from({ length: new Date(f.endYear, f.endMonth + 1, 0).getDate() }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
                 </SelectPill>
               </Field>
             </div>
-            <div style={{ flex: 2 }}>
-              <Field label="Dzień">
-                <SelectPill value={parseInt(f.endDay) || sel} onChange={v => setF(p => ({...p, endDay: v}))}>
-                  {Array.from({ length: new Date(f.endYear, f.endMonth + 1, 0).getDate() }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+            <div style={{ flex: 3 }}>
+              <Field label="Miesiąc">
+                <SelectPill value={f.endMonth} onChange={v => setF(p => ({...p, endMonth: parseInt(v)}))}>
+                  {MONTHS.map((m, i) => <option key={i} value={i}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
                 </SelectPill>
               </Field>
             </div>

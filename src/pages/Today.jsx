@@ -224,6 +224,10 @@ function WeekView() {
           if (e.date === dateStr) return true
           if (e.date_end) return e.date <= dateStr && e.date_end >= dateStr
           return false
+        }).sort((a, b) => {
+          if (!a.time_start && b.time_start) return -1
+          if (a.time_start && !b.time_start) return 1
+          return (a.time_start || '').localeCompare(b.time_start || '')
         })
         return (
           <Card key={dateStr} pad={0} style={{ overflow: 'hidden' }}>
