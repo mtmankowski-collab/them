@@ -68,7 +68,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
           {nextUp && <div style={{ width: 6, background: personColor(nextUp.owner) }} />}
           <div style={{ padding: '15px 16px', flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: nextUp ? 7 : 0 }}>
-              <Label style={{ whiteSpace: 'nowrap' }}>Teraz / najbliżej</Label>
+              <Label style={{ whiteSpace: 'nowrap' }}>Najbliżej</Label>
               {nextUp && <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{nextUp.time_start ? nextUp.time_start.slice(0,5) : 'cały dzień'}</span>}
             </div>
             {nextUp ? (
