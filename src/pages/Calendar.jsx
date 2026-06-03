@@ -355,7 +355,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
       ) : null}
 
       {dayEvs.length > 0 && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
           <AddBtn label="Dodaj wydarzenie" onClick={openAdd} />
         </div>
       )}
