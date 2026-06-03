@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Icon from './Icon'
 import { PEOPLE, personColor, personSoft } from '../lib/supabase'
 
@@ -154,8 +155,8 @@ export function Sheet({ open, title, sub, onClose, onSubmit, onDelete, submitLab
   }, [open])
 
   if (!open) return null
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(26,22,18,.42)',
+  return createPortal(
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(26,22,18,.42)',
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', animation: 'them-fade .2s ease' }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderTopLeftRadius: 26,
         borderTopRightRadius: 26, maxHeight: '92svh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -195,7 +196,8 @@ export function Sheet({ open, title, sub, onClose, onSubmit, onDelete, submitLab
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
