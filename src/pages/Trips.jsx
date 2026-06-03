@@ -11,6 +11,7 @@ export default function Trips({ onBack }) {
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [f, setF] = useState({ destination: '', country: '' })
+  const [insertError, setInsertError] = useState('')
 
   useEffect(() => {
     supabase.from('vacations').select('*').order('created_at').then(({ data }) => setTrips(data || []))
@@ -30,17 +31,20 @@ export default function Trips({ onBack }) {
 
   async function submit() {
     if (!f.destination.trim()) return
+    setInsertError('')
     if (editItem) {
       const { error } = await supabase.from('vacations').update({
         destination: f.destination.trim(), country: f.country,
       }).eq('id', editItem.id)
-      if (!error) setTrips(prev => prev.map(t => t.id === editItem.id
+      if (error) { setInsertError(error.message); return }
+      setTrips(prev => prev.map(t => t.id === editItem.id
         ? { ...t, destination: f.destination.trim(), country: f.country }
         : t))
     } else {
       const { data, error } = await supabase.from('vacations').insert({
         destination: f.destination.trim(), country: f.country || '',
       }).select().single()
+      if (error) { setInsertError(error.message); return }
       if (data) setTrips(prev => [...prev, data])
     }
     setAddOpen(false)
@@ -87,10 +91,12 @@ export default function Trips({ onBack }) {
       )}
 
       <Sheet open={addOpen} title={editItem ? 'Edytuj podróż' : 'Nowy cel podróży'}
-        onClose={() => { setAddOpen(false); setEditItem(null) }}
+        onClose={() => { setAddOpen(false); setEditItem(null); setInsertError('') }}
         onSubmit={submit} submitLabel={editItem ? 'Zapisz zmiany' : 'Dodaj cel'}
         onDelete={editItem ? deleteItem : undefined}
         accent="var(--b-deep)">
+        {insertError && <div style={{ font: '400 12.5px/1.4 var(--font-sans)', color: '#B6543F', padding: '8px 12px',
+          background: 'rgba(182,84,63,.08)', borderRadius: 8, border: '1px solid rgba(182,84,63,.2)' }}>{insertError}</div>}
         <Field label="Miejsce"><TextInput value={f.destination} onChange={v => setF(p=>({...p,destination:v}))} placeholder="np. Barcelona" /></Field>
         <Field label="Kraj"><TextInput value={f.country} onChange={v => setF(p=>({...p,country:v}))} placeholder="Hiszpania" /></Field>
       </Sheet>

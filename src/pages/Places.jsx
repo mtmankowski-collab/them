@@ -23,6 +23,7 @@ export default function Places({ onBack }) {
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [f, setF] = useState({ name: '', category: 'Jedzenie', city: '', notes: '', map_url: '' })
+  const [insertError, setInsertError] = useState('')
 
   useEffect(() => {
     supabase.from('places').select('*').order('rating', { ascending: false }).then(({ data }) => setPlaces(data || []))
@@ -45,18 +46,21 @@ export default function Places({ onBack }) {
 
   async function submit() {
     if (!f.name.trim()) return
+    setInsertError('')
     const encodedNotes = encodeNotes(f.notes, f.map_url)
     if (editItem) {
       const { error } = await supabase.from('places').update({
         name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes,
       }).eq('id', editItem.id)
-      if (!error) setPlaces(prev => prev.map(p => p.id === editItem.id
+      if (error) { setInsertError(error.message); return }
+      setPlaces(prev => prev.map(p => p.id === editItem.id
         ? { ...p, name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes }
         : p))
     } else {
       const { data, error } = await supabase.from('places').insert({
         name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes, rating: 0,
       }).select().single()
+      if (error) { setInsertError(error.message); return }
       if (data) setPlaces(prev => [data, ...prev])
     }
     setAddOpen(false)
@@ -128,10 +132,12 @@ export default function Places({ onBack }) {
       )}
 
       <Sheet open={addOpen} title={editItem ? 'Edytuj miejsce' : 'Nowe miejsce'}
-        onClose={() => { setAddOpen(false); setEditItem(null) }}
+        onClose={() => { setAddOpen(false); setEditItem(null); setInsertError('') }}
         onSubmit={submit} submitLabel={editItem ? 'Zapisz zmiany' : 'Zapisz miejsce'}
         onDelete={editItem ? deleteItem : undefined}
         accent="var(--a-deep)">
+        {insertError && <div style={{ font: '400 12.5px/1.4 var(--font-sans)', color: '#B6543F', padding: '8px 12px',
+          background: 'rgba(182,84,63,.08)', borderRadius: 8, border: '1px solid rgba(182,84,63,.2)' }}>{insertError}</div>}
         <Field label="Nazwa"><TextInput value={f.name} onChange={v => setF(p=>({...p,name:v}))} placeholder="np. Bistro Warzywa" /></Field>
         <Field label="Kategoria"><ChipPicker value={f.category} onChange={v => setF(p=>({...p,category:v}))} options={CATS} /></Field>
         <Field label="Miasto / dzielnica"><TextInput value={f.city} onChange={v => setF(p=>({...p,city:v}))} placeholder="Mokotów" /></Field>

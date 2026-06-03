@@ -158,7 +158,7 @@ export function Sheet({ open, title, sub, onClose, onSubmit, onDelete, submitLab
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(26,22,18,.42)',
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', animation: 'them-fade .2s ease' }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderTopLeftRadius: 26,
-        borderTopRightRadius: 26, maxHeight: '92%', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        borderTopRightRadius: 26, maxHeight: '92svh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
         marginBottom: kbOffset, boxShadow: '0 -12px 40px rgba(26,22,18,.22)',
         animation: 'them-slideup .26s cubic-bezier(.2,.9,.3,1)' }}>
         {/* Scrollable content area */}
