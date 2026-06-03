@@ -17,14 +17,14 @@ export default async function handler(req, res) {
     process.env.SUPABASE_SERVICE_KEY
   )
 
-  const { title, body, tag } = req.body
+  const { title, body, tag, url } = req.body
   if (!title) return res.status(400).json({ error: 'title required' })
 
   const { data: subs, error: subsError } = await supabase.from('push_subscriptions').select('*')
   console.log('push_subscriptions query:', { count: subs?.length, error: subsError?.message })
   if (!subs?.length) return res.json({ sent: 0, subsError: subsError?.message, debug: 'no subs found' })
 
-  const payload = JSON.stringify({ title, body, tag: tag || 'them' })
+  const payload = JSON.stringify({ title, body, tag: tag || 'them', url: url || '/' })
   const results = await Promise.allSettled(
     subs.map(sub =>
       webpush.sendNotification(

@@ -31,11 +31,12 @@ function birthdayMarksFromData(bdays, month) {
   return marks
 }
 
-export default function Calendar({ onGoBirthdays }) {
+export default function Calendar({ onGoBirthdays, initialDate }) {
   const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth())
-  const [sel, setSel] = useState(now.getDate())
+  const initD = initialDate ? new Date(initialDate + 'T12:00:00') : now
+  const [year, setYear] = useState(initD.getFullYear())
+  const [month, setMonth] = useState(initD.getMonth())
+  const [sel, setSel] = useState(initD.getDate())
   const [marks, setMarks] = useState({})
   const [birthdayMarks, setBirthdayMarks] = useState({})
   const [dayEvs, setDayEvs] = useState([])
@@ -137,7 +138,7 @@ export default function Calendar({ onGoBirthdays }) {
         const selDate = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
         if (date === selDate) setDayEvs(prev => [...prev, data].sort((a,b) => (a.time_start||'').localeCompare(b.time_start||'')))
         const timeLabel = f.allDay ? 'cały dzień' : f.time
-        sendPush(`📅 Nowe wydarzenie`, `${f.title} · ${date} · ${timeLabel}`)
+        sendPush(`📅 Nowe wydarzenie`, `${f.title} · ${date} · ${timeLabel}`, 'calendar', `/?date=${date}`)
         scheduleUpcomingEventNotifications([data])
       }
     }

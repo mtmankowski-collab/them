@@ -43,7 +43,7 @@ export async function subscribeToPush() {
   }
 }
 
-export async function sendPush(title, body, tag = 'them') {
+export async function sendPush(title, body, tag = 'them', url = '/') {
   try {
     const res = await fetch('/api/send-push', {
       method: 'POST',
@@ -51,7 +51,7 @@ export async function sendPush(title, body, tag = 'them') {
         'Content-Type': 'application/json',
         'x-push-token': import.meta.env.VITE_PUSH_TOKEN || '',
       },
-      body: JSON.stringify({ title, body, tag }),
+      body: JSON.stringify({ title, body, tag, url }),
     })
     const data = await res.json().catch(() => ({}))
     console.log('sendPush response:', res.status, data)

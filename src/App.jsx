@@ -21,8 +21,15 @@ const SUB_PAGES = ['chat','shopping','knowledge','places','trips','birthdays','i
 
 export default function App() {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem('them_unlocked') === '1')
-  const [page, setPage] = useState('today')
+  const [page, setPage] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('date') ? 'calendar' : 'today'
+  })
   const [sub, setSub] = useState(null)
+  const [calendarDate, setCalendarDate] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('date') || null
+  })
   const [dark, setDark] = useState(() => localStorage.getItem('them_dark') === '1')
 
   // more screen counts
@@ -93,7 +100,7 @@ export default function App() {
               onGoFinance={() => setPage('finance')}
             />
           )}
-          {page === 'calendar' && <Calendar onGoBirthdays={() => navigate('birthdays')} />}
+          {page === 'calendar' && <Calendar onGoBirthdays={() => navigate('birthdays')} initialDate={calendarDate} />}
           {page === 'finance' && <Finance />}
           {page === 'films' && <Films />}
           {page === 'more' && (
