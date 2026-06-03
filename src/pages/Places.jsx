@@ -58,7 +58,7 @@ export default function Places({ onBack }) {
         : p))
     } else {
       const { data, error } = await supabase.from('places').insert({
-        name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes, rating: 0, added_by: f.added_by,
+        name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes, added_by: f.added_by,
       }).select().single()
       if (error) { setInsertError(error.message); return }
       if (data) setPlaces(prev => [data, ...prev])
