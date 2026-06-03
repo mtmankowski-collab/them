@@ -23,7 +23,15 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
 
   useEffect(() => {
     const today = now.toISOString().split('T')[0]
-    supabase.from('events').select('*').eq('date', today).order('time_start', { nullsFirst: true }).then(({ data }) => setEvents(data || []))
+    const todayMD = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}`
+    supabase.from('events').select('*').eq('date', today).order('time_start', { nullsFirst: true }).then(({ data }) => {
+      supabase.from('birthdays').select('*').then(({ data: bdays }) => {
+        const bdToday = (bdays || []).filter(b => b.date === todayMD).map(b => ({
+          id: 'bd-' + b.id, title: `🎂 Urodziny: ${b.name}`, time_start: null, owner: 'birthday', isBirthday: true
+        }))
+        setEvents([...bdToday, ...(data || [])])
+      })
+    })
     supabase.from('shopping').select('*').eq('done', false).order('created_at', { ascending: false }).limit(6).then(({ data }) => setShopping(data || []))
     supabase.from('board').select('*').order('created_at', { ascending: false }).limit(3).then(({ data }) => {
       if (data) setMsgs(data.reverse().map(m => ({ who: m.author, text: m.message, at: fmtTime(m.created_at) })))
@@ -175,12 +183,25 @@ function WeekView() {
     for (let i = 0; i < 7; i++) {
       const d = new Date(now)
       d.setDate(d.getDate() + i)
-      days.push(d.toISOString().split('T')[0])
+      days.push(d)
     }
+    const dateStrs = days.map(d => d.toISOString().split('T')[0])
     supabase.from('events').select('*')
-      .gte('date', days[0]).lte('date', days[6])
+      .gte('date', dateStrs[0]).lte('date', dateStrs[6])
       .order('date').order('time_start')
-      .then(({ data }) => setWeekEvents(data || []))
+      .then(({ data: evs }) => {
+        supabase.from('birthdays').select('*').then(({ data: bdays }) => {
+          const bdEvs = []
+          days.forEach(d => {
+            const md = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`
+            const dateStr = d.toISOString().split('T')[0]
+            ;(bdays || []).filter(b => b.date === md).forEach(b => {
+              bdEvs.push({ id: 'bd-' + b.id + '-' + dateStr, date: dateStr, title: `🎂 ${b.name}`, time_start: null, owner: 'birthday', isBirthday: true })
+            })
+          })
+          setWeekEvents([...(evs || []), ...bdEvs])
+        })
+      })
   }, [])
 
   const dayNames = ['Nd','Pn','Wt','Śr','Cz','Pt','So']
@@ -209,7 +230,7 @@ function WeekView() {
                 {items.length ? items.map((ev, j) => (
                   <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '3.5px 0' }}>
                     <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--ink-2)', width: 34, flexShrink: 0 }}>{ev.time_start?.slice(0,5)}</span>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: personColor(ev.owner), flexShrink: 0 }} />
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: ev.isBirthday ? '#4A90D9' : personColor(ev.owner), flexShrink: 0 }} />
                     <span style={{ flex: 1, font: '500 13.5px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{ev.title}</span>
                   </div>
                 )) : (

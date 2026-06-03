@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
 import { Card, ScreenHead, SectionTitle, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, ChipPicker } from '../components/ui'
+
+function SelectPill({ value, onChange, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', background: 'var(--cream-warm)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: '0 14px' }}>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', padding: '13px 0',
+          font: '400 16px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', width: '100%' }}>
+        {children}
+      </select>
+      <Icon name="chevron" size={14} color="var(--ink-3)" style={{ flexShrink: 0 }} />
+    </div>
+  )
+}
 import { supabase } from '../lib/supabase'
 
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
@@ -11,7 +24,7 @@ export default function Birthdays({ onBack }) {
   const [birthdays, setBirthdays] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ name: '', date: '', rel: 'Rodzina', year: '' })
+  const [f, setF] = useState({ name: '', day: '1', month: '1', rel: 'Rodzina', year: '' })
 
   useEffect(() => {
     loadBirthdays()
@@ -44,19 +57,22 @@ export default function Birthdays({ onBack }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ name: '', date: '', rel: 'Rodzina', year: '' })
+    const now = new Date()
+    setF({ name: '', day: String(now.getDate()), month: String(now.getMonth() + 1), rel: 'Rodzina', year: '' })
     setAddOpen(true)
   }
 
   function openEdit(b) {
     setEditItem(b)
-    setF({ name: b.name, date: b.date, rel: b.rel || 'Rodzina', year: b.year ? String(b.year) : '' })
+    const [dd, mm] = b.date.split('.')
+    setF({ name: b.name, day: String(parseInt(dd)), month: String(parseInt(mm)), rel: b.rel || 'Rodzina', year: b.year ? String(b.year) : '' })
     setAddOpen(true)
   }
 
   async function submit() {
-    if (!f.name.trim() || !f.date.trim()) return
-    const record = { name: f.name.trim(), date: f.date.trim(), rel: f.rel, year: f.year ? parseInt(f.year) : null }
+    if (!f.name.trim()) return
+    const date = `${String(f.day).padStart(2,'0')}.${String(f.month).padStart(2,'0')}`
+    const record = { name: f.name.trim(), date, rel: f.rel, year: f.year ? parseInt(f.year) : null }
     if (editItem) {
       const { data } = await supabase.from('birthdays').update(record).eq('id', editItem.id).select()
       if (data) {
@@ -151,7 +167,22 @@ export default function Birthdays({ onBack }) {
         onDelete={editItem ? deleteItem : undefined}
         accent="var(--a)">
         <Field label="Kto"><TextInput value={f.name} onChange={v => setF(p=>({...p,name:v}))} placeholder="np. Babcia Hania" /></Field>
-        <Field label="Data (DD.MM)"><TextInput value={f.date} onChange={v => setF(p=>({...p,date:v}))} placeholder="21.02" /></Field>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ flex: 3 }}>
+            <Field label="Miesiąc">
+              <SelectPill value={f.month} onChange={v => setF(p=>({...p,month:v}))}>
+                {MONTHS.map((m, i) => <option key={i} value={i+1}>{m.charAt(0).toUpperCase()+m.slice(1)}</option>)}
+              </SelectPill>
+            </Field>
+          </div>
+          <div style={{ flex: 2 }}>
+            <Field label="Dzień">
+              <SelectPill value={f.day} onChange={v => setF(p=>({...p,day:v}))}>
+                {Array.from({ length: new Date(2000, parseInt(f.month), 0).getDate() }, (_, i) => i+1).map(d => <option key={d} value={d}>{d}</option>)}
+              </SelectPill>
+            </Field>
+          </div>
+        </div>
         <Field label="Rok urodzenia (opcjonalnie)"><TextInput value={f.year} onChange={v => setF(p=>({...p,year:v}))} type="number" placeholder="1985" /></Field>
         <Field label="Kim jest"><ChipPicker value={f.rel} onChange={v => setF(p=>({...p,rel:v}))} options={['Rodzina','Partnerka','Partner','Córka','Syn','Przyjaciel','Inne']} /></Field>
       </Sheet>
