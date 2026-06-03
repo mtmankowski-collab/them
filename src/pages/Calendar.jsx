@@ -8,6 +8,13 @@ import { sendPush } from '../lib/push'
 
 const DAYS = ['Pn','Wt','Śr','Cz','Pt','So','Nd']
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
+const MONTH_GEN = ['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia']
+
+function fmtEndDate(dateStr) {
+  if (!dateStr) return ''
+  const [, m, d] = dateStr.split('-')
+  return `${parseInt(d)} ${MONTH_GEN[parseInt(m)-1]}`
+}
 const LS_BIRTHDAYS = 'them_birthdays'
 
 function parseTime(v) {
@@ -331,16 +338,16 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
               <div style={{ display: 'flex', alignItems: 'stretch' }}>
                 <div style={{ width: 5, background: personColor(e.owner) }} />
                 <div style={{ padding: '13px 15px', flex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--ink)' }}>
-                      {e.time_start ? e.time_start.slice(0,5) : 'Cały dzień'}
+                  {e.time_start && <>
+                    <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                      <div style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--ink)' }}>{e.time_start.slice(0,5)}</div>
                     </div>
-                  </div>
-                  <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--line)' }} />
+                    <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--line)' }} />
+                  </>}
                   <div style={{ flex: 1 }}>
                     <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{e.title}</div>
                     {e.location && <div style={{ font: '400 12.5px/1 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>{e.location}</div>}
-                    {e.date_end && <div style={{ font: '400 11.5px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 4 }}>do {e.date_end}</div>}
+                    {e.date_end && <div style={{ font: '400 11.5px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 4 }}>do {fmtEndDate(e.date_end)}</div>}
                   </div>
                   <Icon name="chevron" size={17} color="var(--ink-3)" />
                   <Avatar who={e.owner} size={28} />

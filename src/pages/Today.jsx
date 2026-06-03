@@ -237,7 +237,7 @@ function WeekView() {
               <div style={{ flex: 1, padding: '10px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 56 }}>
                 {items.length ? items.map((ev, j) => (
                   <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '3.5px 0' }}>
-                    <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--ink-2)', width: 34, flexShrink: 0 }}>{ev.time_start?.slice(0,5)}</span>
+                    {ev.time_start && <span style={{ font: '500 12px/1 var(--font-sans)', color: 'var(--ink-2)', width: 34, flexShrink: 0 }}>{ev.time_start.slice(0,5)}</span>}
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: ev.isBirthday ? '#4A90D9' : personColor(ev.owner), flexShrink: 0 }} />
                     <span style={{ flex: 1, font: '500 13.5px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{ev.title}</span>
                   </div>
