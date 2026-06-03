@@ -53,7 +53,7 @@ export default function Films() {
     } else {
       const { data, error } = await supabase.from('movies').insert({
         title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by,
-        status: 'to_watch', rating: 0,
+        status: 'to_watch',
       }).select().single()
       if (error) { setInsertError(error.message); return }
       if (data) { setFilms(prev => [data, ...prev]); setTab('toWatch') }
@@ -124,7 +124,8 @@ export default function Films() {
       <Sheet open={addOpen} title={editItem ? 'Edytuj tytuł' : 'Dodaj do obejrzenia'}
         onClose={() => { setAddOpen(false); setEditItem(null); setInsertError('') }}
         onSubmit={submit} submitLabel={editItem ? 'Zapisz zmiany' : 'Dodaj tytuł'}
-        onDelete={editItem ? deleteFilm : undefined}>
+        onDelete={editItem ? deleteFilm : undefined}
+        accent="var(--a)">
         {insertError && <div style={{ font: '400 12.5px/1.4 var(--font-sans)', color: '#B6543F', padding: '8px 12px',
           background: 'rgba(182,84,63,.08)', borderRadius: 8, border: '1px solid rgba(182,84,63,.2)' }}>{insertError}</div>}
         <Field label="Tytuł"><TextInput value={f.title} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Dune: Part Two" /></Field>

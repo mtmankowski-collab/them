@@ -141,7 +141,7 @@ export default function Calendar({ onGoBirthdays }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false })
+    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, day: String(sel) })
     setAddOpen(true)
   }
 
@@ -262,7 +262,7 @@ export default function Calendar({ onGoBirthdays }) {
         <Field label="Wydarzenie"><TextInput value={f.title} onChange={v => setF(p => ({...p, title: v}))} placeholder="np. Wizyta u lekarza" /></Field>
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}><Field label="Godzina"><TextInput value={f.time} onChange={v => setF(p => ({...p, time: v}))} placeholder="12:00" /></Field></div>
-          <div style={{ width: 110 }}><Field label={`Dzień (${MONTHS[month].slice(0,3)})`}><TextInput value={f.day || String(sel)} onChange={v => setF(p => ({...p, day: v}))} type="number" placeholder={String(sel)} /></Field></div>
+          <div style={{ width: 110 }}><Field label={`Dzień (${MONTHS[month].slice(0,3)})`}><TextInput value={f.day ?? String(sel)} onChange={v => setF(p => ({...p, day: v}))} placeholder={String(sel)} /></Field></div>
         </div>
         <Field label="Miejsce (opcjonalnie)"><TextInput value={f.location} onChange={v => setF(p => ({...p, location: v}))} placeholder="np. ul. Lipowa 4" /></Field>
         <Field label="Kto"><PersonPicker value={f.owner} onChange={v => setF(p => ({...p, owner: v}))} /></Field>
