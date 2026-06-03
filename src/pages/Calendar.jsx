@@ -18,6 +18,13 @@ function parseTime(v) {
   return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`
 }
 
+const TIME_OPTS = []
+for (let h = 0; h < 24; h++) {
+  for (let m = 0; m < 60; m += 15) {
+    TIME_OPTS.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
+  }
+}
+
 function birthdayMarksFromData(bdays, month) {
   const marks = {}
   bdays.forEach(b => {
@@ -51,7 +58,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
   const [dayEvs, setDayEvs] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: '', month: month, year: year, dateEnd: '' })
+  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, multiDay: false, day: '', month: month, year: year, dateEnd: '', endDay: '', endMonth: month, endYear: year })
   const [bdEditOpen, setBdEditOpen] = useState(false)
   const [bdEditItem, setBdEditItem] = useState(null)
   const [bdF, setBdF] = useState({ name: '', day: '', month: 0, rel: 'Rodzina', year: '' })
@@ -110,7 +117,10 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
 
   useEffect(() => {
     const date = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
-    supabase.from('events').select('*').eq('date', date).order('time_start').then(({ data }) => setDayEvs(data || []))
+    supabase.from('events').select('*')
+      .or(`date.eq.${date},and(date.lte.${date},date_end.gte.${date})`)
+      .order('time_start', { nullsFirst: true })
+      .then(({ data }) => setDayEvs(data || []))
   }, [sel, year, month])
 
   async function submitEvent() {
@@ -139,7 +149,9 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
     }
 
     const timeStart = f.allDay ? null : ((parseTime(f.time) || f.time) + ':00')
-    const dateEnd = f.dateEnd || null
+    const dateEnd = f.multiDay && f.endDay
+      ? `${f.endYear}-${String(f.endMonth+1).padStart(2,'0')}-${String(f.endDay).padStart(2,'0')}`
+      : null
 
     if (editItem) {
       await supabase.from('events').update({ title: f.title, time_start: timeStart, location: f.location, owner: f.owner, date_end: dateEnd }).eq('id', editItem.id)
@@ -168,7 +180,9 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
     const evMonth = evDate ? evDate.getMonth() : month
     const evYear = evDate ? evDate.getFullYear() : year
     const evDay = evDate ? String(evDate.getDate()) : ''
-    setF({ title: ev.title, time: ev.time_start?.slice(0,5) || '12:00', owner: ev.owner, location: ev.location || '', isBirthday: false, allDay: !ev.time_start, day: evDay, month: evMonth, year: evYear, dateEnd: ev.date_end || '' })
+    const hasEnd = !!ev.date_end
+    const endD = hasEnd ? new Date(ev.date_end + 'T12:00:00') : null
+    setF({ title: ev.title, time: ev.time_start?.slice(0,5) || '12:00', owner: ev.owner, location: ev.location || '', isBirthday: false, allDay: !ev.time_start, multiDay: hasEnd, day: evDay, month: evMonth, year: evYear, dateEnd: ev.date_end || '', endDay: endD ? String(endD.getDate()) : '', endMonth: endD ? endD.getMonth() : evMonth, endYear: endD ? endD.getFullYear() : evYear })
     setAddOpen(true)
   }
 
@@ -224,7 +238,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, day: String(sel), month, year, dateEnd: '' })
+    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, multiDay: false, day: String(sel), month, year, dateEnd: '', endDay: String(sel), endMonth: month, endYear: year })
     setAddOpen(true)
   }
 
@@ -345,18 +359,22 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
         onDelete={editItem ? deleteEvent : undefined}>
         <Field label="Wydarzenie"><TextInput value={f.title} onChange={v => setF(p => ({...p, title: v}))} placeholder="np. Wizyta u lekarza" /></Field>
 
-        {/* All day toggle */}
-        <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '2px 0' }}>
-          <div onClick={() => setF(p => ({...p, allDay: !p.allDay}))}
-            style={{ width: 24, height: 24, borderRadius: 8, border: '1.8px solid ' + (f.allDay ? 'var(--ink)' : 'var(--line-strong)'),
-              background: f.allDay ? 'var(--ink)' : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {f.allDay && <Icon name="check" size={15} color="#fff" stroke={2.2} />}
-          </div>
-          <span style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Cały dzień</span>
-        </label>
+        {/* Toggles row */}
+        <div style={{ display: 'flex', gap: 16 }}>
+          {[{ key: 'allDay', label: 'Cały dzień' }, { key: 'multiDay', label: 'Wydarzenie parodniowe' }].map(({ key, label }) => (
+            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <div onClick={() => setF(p => ({...p, [key]: !p[key]}))}
+                style={{ width: 22, height: 22, borderRadius: 7, border: '1.8px solid ' + (f[key] ? 'var(--ink)' : 'var(--line-strong)'),
+                  background: f[key] ? 'var(--ink)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {f[key] && <Icon name="check" size={13} color="#fff" stroke={2.2} />}
+              </div>
+              <span style={{ font: '500 13px/1 var(--font-sans)', color: 'var(--ink)' }}>{label}</span>
+            </label>
+          ))}
+        </div>
 
-        {/* Date row: always shown */}
+        {/* Start date */}
         <div style={{ display: 'flex', gap: 8 }}>
           <div style={{ flex: 3 }}>
             <Field label="Miesiąc">
@@ -382,14 +400,39 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
         </div>
 
         {!f.allDay && (
-          <Field label="Godzina (np. 9:15)">
-            <TextInput value={f.time} onChange={v => setF(p => ({...p, time: v}))} placeholder="12:00" />
+          <Field label="Godzina">
+            <SelectPill value={f.time} onChange={v => setF(p => ({...p, time: v}))}>
+              {TIME_OPTS.map(t => <option key={t} value={t}>{t}</option>)}
+            </SelectPill>
           </Field>
         )}
 
-        <Field label="Data końca (opcjonalnie, dla wydarzeń wielodniowych)">
-          <TextInput value={f.dateEnd} onChange={v => setF(p => ({...p, dateEnd: v}))} placeholder="np. 2026-06-15" />
-        </Field>
+        {/* End date for multi-day events */}
+        {f.multiDay && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 3 }}>
+              <Field label="Do — miesiąc">
+                <SelectPill value={f.endMonth} onChange={v => setF(p => ({...p, endMonth: parseInt(v)}))}>
+                  {MONTHS.map((m, i) => <option key={i} value={i}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
+                </SelectPill>
+              </Field>
+            </div>
+            <div style={{ flex: 2 }}>
+              <Field label="Dzień">
+                <SelectPill value={parseInt(f.endDay) || sel} onChange={v => setF(p => ({...p, endDay: v}))}>
+                  {Array.from({ length: new Date(f.endYear, f.endMonth + 1, 0).getDate() }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+                </SelectPill>
+              </Field>
+            </div>
+            <div style={{ flex: 2 }}>
+              <Field label="Rok">
+                <SelectPill value={f.endYear} onChange={v => setF(p => ({...p, endYear: parseInt(v)}))}>
+                  {[year - 1, year, year + 1].map(y => <option key={y} value={y}>{y}</option>)}
+                </SelectPill>
+              </Field>
+            </div>
+          </div>
+        )}
 
         <Field label="Miejsce (opcjonalnie)"><TextInput value={f.location} onChange={v => setF(p => ({...p, location: v}))} placeholder="np. ul. Lipowa 4" /></Field>
         <Field label="Kto"><PersonPicker value={f.owner} onChange={v => setF(p => ({...p, owner: v}))} /></Field>
