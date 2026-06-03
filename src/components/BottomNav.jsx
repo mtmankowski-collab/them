@@ -15,8 +15,7 @@ export default function BottomNav({ page, onNavigate }) {
         const active = page === t.id
         return (
           <button key={t.id} className="navitem" onClick={() => onNavigate(t.id)}>
-            {active && <span className="navdot" />}
-            <Icon name={t.icon} size={24} color={active ? 'var(--a)' : 'var(--ink-3)'} stroke={active ? 2 : 1.6} />
+            {active && <span className="navdot" />}            <Icon name={t.icon} size={24} color={active ? 'var(--a)' : 'var(--ink-3)'} stroke={active ? 2 : 1.6} />
             <span style={{ font: '500 10px/1 var(--font-sans)', letterSpacing: '.03em',
               color: active ? 'var(--ink)' : 'var(--ink-3)' }}>{t.label}</span>
           </button>

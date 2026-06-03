@@ -128,7 +128,7 @@ function TripDetail({ trip, onBack, onEdit }) {
   const [places, setPlaces] = useState(() => getTripPlaces(trip.id))
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ name: '', type: 'Restauracja', notes: '' })
+  const [f, setF] = useState({ name: '', type: 'Restauracja', notes: '', map_url: '' })
 
   function saveAll(updated) {
     setPlaces(updated)
@@ -137,22 +137,22 @@ function TripDetail({ trip, onBack, onEdit }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ name: '', type: 'Restauracja', notes: '' })
+    setF({ name: '', type: 'Restauracja', notes: '', map_url: '' })
     setAddOpen(true)
   }
 
   function openEdit(p) {
     setEditItem(p)
-    setF({ name: p.name, type: p.type, notes: p.notes || '' })
+    setF({ name: p.name, type: p.type, notes: p.notes || '', map_url: p.map_url || '' })
     setAddOpen(true)
   }
 
   function submit() {
     if (!f.name.trim()) return
     if (editItem) {
-      saveAll(places.map(p => p.id === editItem.id ? { ...p, name: f.name.trim(), type: f.type, notes: f.notes.trim() } : p))
+      saveAll(places.map(p => p.id === editItem.id ? { ...p, name: f.name.trim(), type: f.type, notes: f.notes.trim(), map_url: f.map_url.trim() } : p))
     } else {
-      saveAll([...places, { id: Date.now(), name: f.name.trim(), type: f.type, notes: f.notes.trim() }])
+      saveAll([...places, { id: Date.now(), name: f.name.trim(), type: f.type, notes: f.notes.trim(), map_url: f.map_url.trim() }])
     }
     setAddOpen(false)
     setEditItem(null)
@@ -192,8 +192,20 @@ function TripDetail({ trip, onBack, onEdit }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {grouped[type].map(p => (
                   <Card key={p.id} pad={14} onClick={() => openEdit(p)} style={{ cursor: 'pointer' }}>
-                    <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{p.name}</div>
-                    {p.notes && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>{p.notes}</div>}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{p.name}</div>
+                        {p.notes && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>{p.notes}</div>}
+                      </div>
+                      {p.map_url && (
+                        <a href={p.map_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                          style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--b)', border: 'none',
+                            borderRadius: 'var(--r-pill)', padding: '8px 12px', textDecoration: 'none', flexShrink: 0, cursor: 'pointer' }}>
+                          <Icon name="map" size={15} color="#fff" />
+                          <span style={{ font: '600 11.5px/1 var(--font-sans)', color: '#fff' }}>Mapa</span>
+                        </a>
+                      )}
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -209,6 +221,7 @@ function TripDetail({ trip, onBack, onEdit }) {
         <Field label="Nazwa"><TextInput value={f.name} onChange={v => setF(p=>({...p,name:v}))} placeholder="np. La Boqueria" /></Field>
         <Field label="Typ"><ChipPicker value={f.type} onChange={v => setF(p=>({...p,type:v}))} options={PLACE_TYPES} /></Field>
         <Field label="Notatka (opcjonalnie)"><TextInput value={f.notes} onChange={v => setF(p=>({...p,notes:v}))} placeholder="adres, godziny, uwagi…" /></Field>
+        <Field label="Link Google Maps (opcjonalnie)"><TextInput value={f.map_url} onChange={v => setF(p=>({...p,map_url:v}))} placeholder="https://maps.google.com/…" /></Field>
       </Sheet>
     </div>
   )

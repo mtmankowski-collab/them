@@ -19,7 +19,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
   const dayName = DAY_NAMES[now.getDay()]
   const dateLabel = `${dayName}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`
   const h = now.getHours()
-  const greeting = h < 12 ? 'Dzień dobry' : h < 18 ? 'Dobry wieczór' : 'Dobranoc'
+  const greeting = (h >= 6 && h < 18) ? 'Dzień dobry' : 'Dobry wieczór'
 
   useEffect(() => {
     const today = now.toISOString().split('T')[0]
@@ -45,9 +45,14 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
 
   return (
     <div className="screen">
-      <div style={{ padding: '8px 0 18px' }}>
-        <Label style={{ marginBottom: 9 }}>{dateLabel}</Label>
-        <div style={{ font: `400 32px/1.05 ${SERIF}`, color: 'var(--ink)' }}>{greeting}</div>
+      <div style={{ padding: '8px 0 18px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <Label style={{ marginBottom: 9 }}>{dateLabel}</Label>
+          <div style={{ font: `400 32px/1.05 ${SERIF}`, color: 'var(--ink)' }}>{greeting}</div>
+        </div>
+        <div style={{ width: 42, height: 42, borderRadius: 14, background: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 }}>
+          <span style={{ font: `400 22px/1 ${SERIF}`, color: 'var(--cream)', letterSpacing: '-.02em' }}>M</span>
+        </div>
       </div>
 
       {nextUp ? (
@@ -149,7 +154,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
         {shopping.length ? shopping.slice(0,5).map((s, i) => (
           <div key={s.id} style={{ display: 'flex', gap: 11, padding: '8px 0', alignItems: 'center',
             borderTop: i ? '1px solid var(--line)' : 'none' }}>
-            <span style={{ width: 18, height: 18, borderRadius: 6, border: '1.5px solid var(--line-strong)', flexShrink: 0 }} />
+            <Icon name="cart" size={16} color="var(--ink-3)" />
             <span style={{ flex: 1, font: '500 14px/1 var(--font-sans)', color: 'var(--ink)' }}>{s.title}</span>
             <PersonDot who={s.added_by || 'shared'} size={7} />
           </div>
@@ -208,7 +213,7 @@ function WeekView() {
                     <span style={{ flex: 1, font: '500 13.5px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{ev.title}</span>
                   </div>
                 )) : (
-                  <span style={{ font: '400 13px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Wolny dzień</span>
+                  <span style={{ font: '400 13px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Na razie pusto</span>
                 )}
               </div>
             </div>
