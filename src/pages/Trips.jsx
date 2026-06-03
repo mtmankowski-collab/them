@@ -39,7 +39,7 @@ export default function Trips({ onBack }) {
         : t))
     } else {
       const { data, error } = await supabase.from('vacations').insert({
-        destination: f.destination.trim(), country: f.country,
+        destination: f.destination.trim(), country: f.country || '',
       }).select().single()
       if (data) setTrips(prev => [...prev, data])
     }

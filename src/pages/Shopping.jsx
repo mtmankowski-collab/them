@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
 import { PersonDot, Card, ScreenHead, SectionTitle, navBtn, Sheet, Field, TextInput, PersonPicker } from '../components/ui'
 import { supabase } from '../lib/supabase'
+import { notifyNewShoppingItem } from '../lib/notifications'
 
 export default function Shopping({ onBack }) {
   const [items, setItems] = useState([])
@@ -32,7 +33,10 @@ export default function Shopping({ onBack }) {
     const { data } = await supabase.from('shopping').insert({
       title: f.name.trim(), done: false, added_by: f.added_by,
     }).select().single()
-    if (data) setItems(prev => [data, ...prev])
+    if (data) {
+      setItems(prev => [data, ...prev])
+      notifyNewShoppingItem(f.name.trim(), f.added_by)
+    }
     setAddOpen(false)
     setF({ name: '', qty: '', added_by: 'a' })
   }

@@ -3,6 +3,7 @@ import Icon from '../components/Icon'
 import { PersonDot, Card, ScreenHead, EmptyState, SectionTitle, AddBtn, navBtn, navBtnSm, Sheet, Field, TextInput, PersonPicker } from '../components/ui'
 import { Avatar } from '../components/ui'
 import { supabase, personColor } from '../lib/supabase'
+import { scheduleUpcomingEventNotifications, notifyNewEvent } from '../lib/notifications'
 
 const DAYS = ['Pn','Wt','Śr','Cz','Pt','So','Nd']
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
@@ -35,7 +36,7 @@ export default function Calendar({ onGoBirthdays }) {
   const [dayEvs, setDayEvs] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '' })
+  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false })
 
   const touchStartX = useRef(null)
 
@@ -72,6 +73,7 @@ export default function Calendar({ onGoBirthdays }) {
         m[d].push({ who: e.owner })
       })
       setMarks(m)
+      scheduleUpcomingEventNotifications(data)
     })
     setBirthdayMarks(loadBirthdayMarks(month))
   }, [year, month])
@@ -83,7 +85,8 @@ export default function Calendar({ onGoBirthdays }) {
 
   async function submitEvent() {
     if (!f.title.trim()) return
-    const date = `${year}-${String(month+1).padStart(2,'0')}-${String(parseInt(f.day) || sel).padStart(2,'0')}`
+    const dayNum = parseInt(f.day) || sel
+    const date = `${year}-${String(month+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`
     if (editItem) {
       await supabase.from('events').update({ title: f.title, time_start: f.time + ':00', location: f.location, owner: f.owner }).eq('id', editItem.id)
       setDayEvs(prev => prev.map(e => e.id === editItem.id ? { ...e, title: f.title, time_start: f.time + ':00', location: f.location, owner: f.owner } : e))
@@ -94,6 +97,20 @@ export default function Calendar({ onGoBirthdays }) {
         setMarks(prev => { const m = { ...prev }; if (!m[d]) m[d] = []; m[d] = [...m[d], { who: f.owner }]; return m })
         const selDate = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
         if (date === selDate) setDayEvs(prev => [...prev, data].sort((a,b) => (a.time_start||'').localeCompare(b.time_start||'')))
+        notifyNewEvent(f.title, date, f.time)
+        scheduleUpcomingEventNotifications([data])
+      }
+      // If birthday checkbox checked, also save to birthdays localStorage
+      if (f.isBirthday && f.title.trim()) {
+        const bdDay = String(dayNum).padStart(2, '0')
+        const bdMonth = String(month + 1).padStart(2, '0')
+        const bdDate = `${bdDay}.${bdMonth}`
+        try {
+          const existing = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
+          const updated = [...existing, { id: Date.now(), name: f.title.trim(), date: bdDate, rel: 'Inne', year: undefined }]
+          localStorage.setItem(LS_BIRTHDAYS, JSON.stringify(updated))
+          window.dispatchEvent(new CustomEvent('birthdaysChanged'))
+        } catch {}
       }
     }
     setAddOpen(false)
@@ -102,7 +119,7 @@ export default function Calendar({ onGoBirthdays }) {
 
   function openEdit(ev) {
     setEditItem(ev)
-    setF({ title: ev.title, time: ev.time_start?.slice(0,5) || '12:00', owner: ev.owner, location: ev.location || '' })
+    setF({ title: ev.title, time: ev.time_start?.slice(0,5) || '12:00', owner: ev.owner, location: ev.location || '', isBirthday: false })
     setAddOpen(true)
   }
 
@@ -124,7 +141,7 @@ export default function Calendar({ onGoBirthdays }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ title: '', time: '12:00', owner: 'shared', location: '' })
+    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false })
     setAddOpen(true)
   }
 
@@ -249,6 +266,20 @@ export default function Calendar({ onGoBirthdays }) {
         </div>
         <Field label="Miejsce (opcjonalnie)"><TextInput value={f.location} onChange={v => setF(p => ({...p, location: v}))} placeholder="np. ul. Lipowa 4" /></Field>
         <Field label="Kto"><PersonPicker value={f.owner} onChange={v => setF(p => ({...p, owner: v}))} /></Field>
+        {!editItem && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '4px 0' }}>
+            <div onClick={() => setF(p => ({...p, isBirthday: !p.isBirthday}))}
+              style={{ width: 24, height: 24, borderRadius: 8, border: '1.8px solid ' + (f.isBirthday ? 'var(--star)' : 'var(--line-strong)'),
+                background: f.isBirthday ? 'var(--star)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {f.isBirthday && <Icon name="check" size={15} color="#fff" stroke={2.2} />}
+            </div>
+            <div>
+              <div style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Dodaj też do urodzin</div>
+              <div style={{ font: '400 11.5px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 3 }}>Tytuł stanie się imieniem w zakładce urodziny</div>
+            </div>
+          </label>
+        )}
       </Sheet>
     </div>
   )
