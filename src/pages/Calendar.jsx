@@ -17,21 +17,18 @@ for (let h = 0; h < 24; h++) {
   TIME_OPTS.push(`${String(h).padStart(2,'0')}:30`)
 }
 
-function loadBirthdayMarks(month) {
-  try {
-    const bdays = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
-    const marks = {}
-    bdays.forEach(b => {
-      const parts = b.date.split('.')
-      const mm = parseInt(parts[1])
-      const dd = parseInt(parts[0])
-      if (mm === month + 1) {
-        if (!marks[dd]) marks[dd] = []
-        marks[dd].push({ who: 'birthday' })
-      }
-    })
-    return marks
-  } catch { return {} }
+function birthdayMarksFromData(bdays, month) {
+  const marks = {}
+  bdays.forEach(b => {
+    const parts = b.date.split('.')
+    const mm = parseInt(parts[1])
+    const dd = parseInt(parts[0])
+    if (mm === month + 1) {
+      if (!marks[dd]) marks[dd] = []
+      marks[dd].push({ who: 'birthday' })
+    }
+  })
+  return marks
 }
 
 export default function Calendar({ onGoBirthdays }) {
@@ -66,8 +63,14 @@ export default function Calendar({ onGoBirthdays }) {
     touchStartX.current = null
   }
 
+  function loadBdMarks(month) {
+    supabase.from('birthdays').select('id,date').then(({ data }) => {
+      if (data) setBirthdayMarks(birthdayMarksFromData(data, month))
+    })
+  }
+
   useEffect(() => {
-    const reload = () => setBirthdayMarks(loadBirthdayMarks(month))
+    const reload = () => loadBdMarks(month)
     window.addEventListener('birthdaysChanged', reload)
     return () => window.removeEventListener('birthdaysChanged', reload)
   }, [month])
@@ -86,7 +89,7 @@ export default function Calendar({ onGoBirthdays }) {
       setMarks(m)
       scheduleUpcomingEventNotifications(data)
     })
-    setBirthdayMarks(loadBirthdayMarks(month))
+    loadBdMarks(month)
   }, [year, month])
 
   useEffect(() => {
