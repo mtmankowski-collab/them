@@ -180,7 +180,7 @@ export function Sheet({ open, title, sub, onClose, onSubmit, onDelete, submitLab
         </div>
         {/* Sticky footer with action buttons */}
         {(onSubmit || onDelete) && (
-          <div style={{ padding: '12px 20px', paddingBottom: `calc(20px + env(safe-area-inset-bottom, 0px))`,
+          <div style={{ padding: '14px 20px', paddingBottom: `max(28px, calc(env(safe-area-inset-bottom, 0px) + 20px))`,
             borderTop: '1px solid var(--line)', background: 'var(--surface)', flexShrink: 0 }}>
             {onSubmit && (
               <button onClick={onSubmit} style={{ width: '100%', background: accent, color: '#fff',

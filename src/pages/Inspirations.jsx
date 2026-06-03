@@ -71,14 +71,18 @@ export default function Inspirations({ onBack }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)', marginBottom: 4 }}>{item.title}</div>
                   {item.desc && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>{item.desc}</div>}
-                  {item.url && (
-                    <a href={item.url} target="_blank" rel="noopener noreferrer"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, font: '500 12.5px/1 var(--font-sans)',
-                        color: catObj.color, textDecoration: 'none' }}>
-                      <Icon name="external" size={14} color={catObj.color} />
-                      {new URL(item.url).hostname.replace('www.','')}
-                    </a>
-                  )}
+                  {item.url && (() => {
+                    let hostname = item.url
+                    try { hostname = new URL(item.url).hostname.replace('www.','') } catch {}
+                    return (
+                      <a href={item.url} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, font: '500 12.5px/1 var(--font-sans)',
+                          color: catObj.color, textDecoration: 'none' }}>
+                        <Icon name="external" size={14} color={catObj.color} />
+                        {hostname}
+                      </a>
+                    )
+                  })()}
                 </div>
                 <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer',
                   padding: 4, lineHeight: 0, flexShrink: 0 }}>
