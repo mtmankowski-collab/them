@@ -338,19 +338,21 @@ export default function Calendar({ onGoBirthdays }) {
 
         {/* Date row: always shown */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ flex: 2 }}>
+          <div style={{ flex: 3 }}>
             <Field label="Miesiąc">
               <SelectPill value={f.month} onChange={v => setF(p => ({...p, month: parseInt(v)}))}>
                 {MONTHS.map((m, i) => <option key={i} value={i}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
               </SelectPill>
             </Field>
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 2 }}>
             <Field label="Dzień">
-              <TextInput value={f.day ?? String(sel)} onChange={v => setF(p => ({...p, day: v}))} placeholder={String(sel)} />
+              <SelectPill value={parseInt(f.day) || sel} onChange={v => setF(p => ({...p, day: v}))}>
+                {Array.from({ length: new Date(f.year, f.month + 1, 0).getDate() }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+              </SelectPill>
             </Field>
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 2 }}>
             <Field label="Rok">
               <SelectPill value={f.year} onChange={v => setF(p => ({...p, year: parseInt(v)}))}>
                 {[year - 1, year, year + 1].map(y => <option key={y} value={y}>{y}</option>)}
