@@ -62,7 +62,6 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
         <Avatar who="shared" size={44} />
         <div style={{ flex: 1 }}>
           <div style={{ font: `500 17px/1.1 ${SERIF}`, color: 'var(--ink)' }}>Maniek &amp; Ula</div>
-          <div style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>Wspólne konto TheM</div>
         </div>
         <button onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--cream-warm)',
           border: '1px solid var(--line)', cursor: 'pointer', borderRadius: 'var(--r-pill)', padding: '8px 13px',
@@ -91,9 +90,6 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
           <Icon name="sparkle" size={20} color="var(--ink-2)" />
           <div style={{ flex: 1 }}>
             <div style={{ font: '500 14.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Tryb ciemny</div>
-            <div style={{ font: '400 11.5px/1 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>
-              {dark ? 'Ciemne tło' : 'Kremowe tło'}
-            </div>
           </div>
           <Switch on={dark} onClick={onToggleDark} />
         </div>
@@ -136,7 +132,7 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
         submitLabel={pinSuccess ? '✓ Zmieniono!' : 'Zmień PIN'}
         accent="var(--ink)">
         <Field label="Aktualny PIN">
-          <TextInput value={pinF.current} onChange={v => setPinF(p => ({...p, current: v.replace(/\D/g,'').slice(0,4)}))} placeholder="••••" type="number" />
+          <TextInput value={pinF.current} onChange={v => setPinF(p => ({...p, current: v.replace(/\D/g,'').slice(0,4)})) } placeholder="••••" type="number" />
         </Field>
         <Field label="Nowy PIN">
           <TextInput value={pinF.next} onChange={v => setPinF(p => ({...p, next: v.replace(/\D/g,'').slice(0,4)}))} placeholder="••••" type="number" />

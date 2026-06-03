@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
-import { Stars, Card, ScreenHead, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, ChipPicker, PersonPicker } from '../components/ui'
+import { Stars, StarRate, Card, ScreenHead, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, ChipPicker, PersonPicker } from '../components/ui'
 import { supabase } from '../lib/supabase'
 
 const CATS = ['Jedzenie', 'Aktywność']
@@ -67,6 +67,11 @@ export default function Places({ onBack }) {
     setEditItem(null)
   }
 
+  async function rate(id, val) {
+    await supabase.from('places').update({ rating: val }).eq('id', id)
+    setPlaces(prev => prev.map(p => p.id === id ? { ...p, rating: val } : p))
+  }
+
   async function deleteItem() {
     if (!editItem) return
     await supabase.from('places').delete().eq('id', editItem.id)
@@ -107,20 +112,16 @@ export default function Places({ onBack }) {
                       {p.city}{p.category ? ' · ' + p.category : ''}
                     </div>
                     {displayNotes && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>{displayNotes}</div>}
-                    <Stars value={p.rating || 0} size={13} />
+                    <StarRate value={p.rating || 0} onChange={v => { rate(p.id, v) }} size={14} />
                   </div>
                   {mapUrl ? (
                     <a href={mapUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                      style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--b-soft)', border: '1px solid var(--line)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, textDecoration: 'none' }}>
-                      <Icon name="map" size={20} color="var(--b)" />
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--b)', border: 'none',
+                        borderRadius: 'var(--r-pill)', padding: '10px 14px', textDecoration: 'none', flexShrink: 0, cursor: 'pointer' }}>
+                      <Icon name="map" size={16} color="#fff" />
+                      <span style={{ font: '600 12px/1 var(--font-sans)', color: '#fff', whiteSpace: 'nowrap' }}>Nawiguj</span>
                     </a>
-                  ) : (
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--cream-warm)', border: '1px solid var(--line)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon name="map" size={20} color="var(--ink-3)" />
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </Card>
             )

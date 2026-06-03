@@ -207,7 +207,7 @@ export default function Calendar({ onGoBirthdays }) {
                   {ev.slice(0,2).map((e, i) => <span key={'e'+i} style={{ width: 5, height: 5, borderRadius: '50%',
                     background: isSel ? 'var(--cream)' : personColor(e.who) }} />)}
                   {bd.length > 0 && <span style={{ width: 5, height: 5, borderRadius: '50%',
-                    background: isSel ? 'var(--cream)' : 'var(--star)' }} />}
+                    background: isSel ? 'var(--cream)' : '#4A90D9' }} />}
                 </span>
               </button>
             )
@@ -221,7 +221,7 @@ export default function Calendar({ onGoBirthdays }) {
         <Legend who="b" label="Ula" />
         <Legend who="shared" label="Wspólne" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--star)', display: 'inline-block' }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4A90D9', display: 'inline-block' }} />
           <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-2)' }}>Urodziny</span>
         </div>
       </div>
@@ -229,7 +229,7 @@ export default function Calendar({ onGoBirthdays }) {
       <SectionTitle title={selDateLabel} />
 
       {selBirthdays.map(b => (
-        <Card key={b.id} pad={13} style={{ marginBottom: 8, borderLeft: '4px solid var(--star)', overflow: 'hidden' }}>
+        <Card key={b.id} pad={13} style={{ marginBottom: 8, borderLeft: '4px solid #4A90D9', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 18 }}>🎂</span>
             <div>
@@ -265,7 +265,7 @@ export default function Calendar({ onGoBirthdays }) {
           ))}
         </div>
       ) : !selBirthdays.length ? (
-        <EmptyState icon="calendar" title="Wolny dzień" sub="Brak wydarzeń. Dodajcie coś nowego."
+        <EmptyState icon="calendar" title="Na razie pusto" sub="Brak wydarzeń. Dodajcie coś nowego."
           action={<AddBtn label="Dodaj wydarzenie" onClick={openAdd} />} />
       ) : null}
 

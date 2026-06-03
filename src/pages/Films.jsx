@@ -105,9 +105,9 @@ export default function Films() {
                   <StarRate value={m.rating || 0} onChange={v => { rate(m.id, v) }} size={19} />
                 ) : (
                   <button onClick={e => { e.stopPropagation(); markWatched(m) }} style={{ display: 'flex', alignItems: 'center', gap: 6,
-                    background: 'rgba(94,116,89,.14)', border: '1.5px solid var(--b)', cursor: 'pointer',
-                    borderRadius: 'var(--r-pill)', padding: '9px 14px', font: '600 12.5px/1 var(--font-sans)', color: 'var(--b-deep)', flexShrink: 0 }}>
-                    <Icon name="check" size={15} color="var(--b-deep)" stroke={2.5} />Obejrzane
+                    background: 'var(--cream-warm)', border: '1px solid var(--line)', cursor: 'pointer',
+                    borderRadius: 'var(--r-pill)', padding: '9px 14px', font: '500 12.5px/1 var(--font-sans)', color: 'var(--ink-3)', flexShrink: 0 }}>
+                    <Icon name="check" size={15} color="var(--ink-3)" stroke={2} />Obejrzane
                   </button>
                 )}
               </div>
