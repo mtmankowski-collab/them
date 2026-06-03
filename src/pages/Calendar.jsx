@@ -65,6 +65,23 @@ export default function Calendar({ onGoBirthdays }) {
     setAddOpen(true)
   }
 
+  async function deleteEvent() {
+    if (!editItem) return
+    await supabase.from('events').delete().eq('id', editItem.id)
+    setAddOpen(false)
+    setEditItem(null)
+    const d = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
+    supabase.from('events').select('*').eq('date', d).order('time_start').then(({ data }) => setDayEvs(data || []))
+    const from = `${year}-${String(month+1).padStart(2,'0')}-01`
+    const to = `${year}-${String(month+1).padStart(2,'0')}-${daysInMonth}`
+    supabase.from('events').select('*').gte('date', from).lte('date', to).then(({ data }) => {
+      if (!data) return
+      const m = {}
+      data.forEach(e => { const d = parseInt(e.date.split('-')[2]); if (!m[d]) m[d] = []; m[d].push({ who: e.owner }) })
+      setMarks(m)
+    })
+  }
+
   function openAdd() {
     setEditItem(null)
     setF({ title: '', time: '12:00', owner: 'shared', location: '' })
@@ -149,7 +166,8 @@ export default function Calendar({ onGoBirthdays }) {
 
       <Sheet open={addOpen} title={editItem ? 'Edytuj wydarzenie' : 'Nowe wydarzenie'}
         onClose={() => { setAddOpen(false); setEditItem(null) }}
-        onSubmit={submitEvent} submitLabel={editItem ? 'Zapisz zmiany' : 'Dodaj do kalendarza'}>
+        onSubmit={submitEvent} submitLabel={editItem ? 'Zapisz zmiany' : 'Dodaj do kalendarza'}
+        onDelete={editItem ? deleteEvent : undefined}>
         <Field label="Wydarzenie"><TextInput value={f.title} onChange={v => setF(p => ({...p, title: v}))} placeholder="np. Wizyta u lekarza" /></Field>
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}><Field label="Godzina"><TextInput value={f.time} onChange={v => setF(p => ({...p, time: v}))} placeholder="12:00" /></Field></div>

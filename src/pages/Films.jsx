@@ -9,6 +9,7 @@ export default function Films() {
   const [tab, setTab] = useState('toWatch')
   const [films, setFilms] = useState([])
   const [addOpen, setAddOpen] = useState(false)
+  const [editItem, setEditItem] = useState(null)
   const [f, setF] = useState({ title: '', type: 'film', platform: 'Netflix', added_by: 'a' })
 
   useEffect(() => {
@@ -28,20 +29,46 @@ export default function Films() {
     setFilms(prev => prev.map(m => m.id === id ? { ...m, rating: val } : m))
   }
 
-  async function addFilm() {
+  function openAdd() {
+    setEditItem(null)
+    setF({ title: '', type: 'film', platform: 'Netflix', added_by: 'a' })
+    setAddOpen(true)
+  }
+
+  function openEdit(m) {
+    setEditItem(m)
+    setF({ title: m.title, type: m.type || 'film', platform: m.platform || 'Netflix', added_by: m.added_by || 'a' })
+    setAddOpen(true)
+  }
+
+  async function submit() {
     if (!f.title.trim()) return
-    const { data } = await supabase.from('movies').insert({
-      title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by,
-      status: 'to_watch', rating: 0,
-    }).select().single()
-    if (data) setFilms(prev => [data, ...prev])
+    if (editItem) {
+      await supabase.from('movies').update({ title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by }).eq('id', editItem.id)
+      setFilms(prev => prev.map(m => m.id === editItem.id ? { ...m, title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by } : m))
+    } else {
+      const { data } = await supabase.from('movies').insert({
+        title: f.title.trim(), type: f.type, platform: f.platform, added_by: f.added_by,
+        status: 'to_watch', rating: 0,
+      }).select().single()
+      if (data) setFilms(prev => [data, ...prev])
+    }
     setAddOpen(false)
+    setEditItem(null)
+  }
+
+  async function deleteFilm() {
+    if (!editItem) return
+    await supabase.from('movies').delete().eq('id', editItem.id)
+    setFilms(prev => prev.filter(m => m.id !== editItem.id))
+    setAddOpen(false)
+    setEditItem(null)
   }
 
   return (
     <div className="screen" style={{ position: 'relative' }}>
       <ScreenHead sub="Wspólna lista" title="Filmy i seriale" right={
-        <button style={navBtn} onClick={() => { setF({ title:'', type:'film', platform:'Netflix', added_by:'a' }); setAddOpen(true) }}>
+        <button style={navBtn} onClick={openAdd}>
           <Icon name="plus" size={20} color="var(--ink)" />
         </button>
       } />
@@ -55,7 +82,7 @@ export default function Films() {
       {list.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
           {list.map(m => (
-            <Card key={m.id} pad={14}>
+            <Card key={m.id} pad={14} onClick={() => openEdit(m)} style={{ cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 7 }}>
@@ -70,9 +97,9 @@ export default function Films() {
                   </div>
                 </div>
                 {tab === 'watched' ? (
-                  <StarRate value={m.rating || 0} onChange={v => rate(m.id, v)} size={19} />
+                  <StarRate value={m.rating || 0} onChange={v => { rate(m.id, v) }} size={19} />
                 ) : (
-                  <button onClick={() => markWatched(m)} style={{ display: 'flex', alignItems: 'center', gap: 6,
+                  <button onClick={e => { e.stopPropagation(); markWatched(m) }} style={{ display: 'flex', alignItems: 'center', gap: 6,
                     background: 'var(--cream-warm)', border: '1px solid var(--line)', cursor: 'pointer',
                     borderRadius: 'var(--r-pill)', padding: '8px 13px', font: '500 12px/1 var(--font-sans)', color: 'var(--ink)', flexShrink: 0 }}>
                     <Icon name="check" size={15} color="var(--ink-2)" stroke={2} />Obejrzane
@@ -86,10 +113,13 @@ export default function Films() {
         <EmptyState icon="film"
           title={tab === 'toWatch' ? 'Lista pusta' : 'Nic jeszcze obejrzane'}
           sub={tab === 'toWatch' ? 'Dodajcie film lub serial, który chcecie razem obejrzeć.' : 'Obejrzane tytuły pojawią się tutaj z oceną.'}
-          action={tab === 'toWatch' ? <AddBtn label="Dodaj tytuł" onClick={() => setAddOpen(true)} /> : null} />
+          action={tab === 'toWatch' ? <AddBtn label="Dodaj tytuł" onClick={openAdd} /> : null} />
       )}
 
-      <Sheet open={addOpen} title="Dodaj do obejrzenia" onClose={() => setAddOpen(false)} onSubmit={addFilm} submitLabel="Dodaj tytuł">
+      <Sheet open={addOpen} title={editItem ? 'Edytuj tytuł' : 'Dodaj do obejrzenia'}
+        onClose={() => { setAddOpen(false); setEditItem(null) }}
+        onSubmit={submit} submitLabel={editItem ? 'Zapisz zmiany' : 'Dodaj tytuł'}
+        onDelete={editItem ? deleteFilm : undefined}>
         <Field label="Tytuł"><TextInput value={f.title} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Dune: Part Two" /></Field>
         <Field label="Typ"><ChipPicker value={f.type} onChange={v => setF(p=>({...p,type:v}))} options={[{value:'film',label:'Film'},{value:'serial',label:'Serial'}]} /></Field>
         <Field label="Platforma"><ChipPicker value={f.platform} onChange={v => setF(p=>({...p,platform:v}))} options={['Netflix','HBO Max','Disney+','Prime','Kino']} /></Field>

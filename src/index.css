@@ -58,22 +58,31 @@
   --sh-3: 0 8px 24px rgba(0,0,0,.45), 0 24px 56px rgba(0,0,0,.4);
 }
 
-html, body, #root {
+html {
   height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: var(--cream);
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none;
 }
 
 #root {
+  height: 100%;
   display: flex;
   flex-direction: column;
   max-width: 430px;
   margin: 0 auto;
   position: relative;
   overflow: hidden;
+  background: var(--cream);
 }
 
 button { cursor: pointer; border: none; background: none; font-family: inherit; }
@@ -82,8 +91,10 @@ input, textarea, select { font-family: inherit; }
 .screen {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 8px 18px calc(var(--nav-h) + var(--safe-b) + 20px);
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .screen-full {

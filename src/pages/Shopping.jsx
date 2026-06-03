@@ -22,6 +22,11 @@ export default function Shopping({ onBack }) {
     setItems(prev => prev.map(i => i.id === item.id ? { ...i, done: !i.done } : i))
   }
 
+  async function remove(id) {
+    await supabase.from('shopping').delete().eq('id', id)
+    setItems(prev => prev.filter(i => i.id !== id))
+  }
+
   async function addItem() {
     if (!f.name.trim()) return
     const { data } = await supabase.from('shopping').insert({
@@ -42,7 +47,7 @@ export default function Shopping({ onBack }) {
       } />
 
       <Card pad={0} style={{ marginBottom: 16 }}>
-        {toBuy.map((s, i) => <Row key={s.id} s={s} onToggle={toggle} border={i > 0} />)}
+        {toBuy.map((s, i) => <Row key={s.id} s={s} onToggle={toggle} onRemove={remove} border={i > 0} />)}
         {!toBuy.length && (
           <div style={{ padding: '20px', textAlign: 'center', font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-3)' }}>
             Wszystko kupione 🎉
@@ -60,7 +65,7 @@ export default function Shopping({ onBack }) {
       {bought.length > 0 && <>
         <SectionTitle title={`Kupione · ${bought.length}`} />
         <Card pad={0} style={{ opacity: 0.8 }}>
-          {bought.map((s, i) => <Row key={s.id} s={s} onToggle={toggle} border={i > 0} />)}
+          {bought.map((s, i) => <Row key={s.id} s={s} onToggle={toggle} onRemove={remove} border={i > 0} />)}
         </Card>
       </>}
 
@@ -73,21 +78,24 @@ export default function Shopping({ onBack }) {
   )
 }
 
-function Row({ s, onToggle, border }) {
+function Row({ s, onToggle, onRemove, border }) {
   return (
-    <div onClick={() => onToggle(s)} style={{ display: 'flex', gap: 13, padding: '13px 15px', alignItems: 'center', cursor: 'pointer',
+    <div style={{ display: 'flex', gap: 13, padding: '13px 15px', alignItems: 'center',
       borderTop: border ? '1px solid var(--line)' : 'none' }}>
-      <div style={{ width: 24, height: 24, borderRadius: 8, flexShrink: 0,
+      <button onClick={() => onToggle(s)} style={{ width: 24, height: 24, borderRadius: 8, flexShrink: 0,
         border: '1.8px solid ' + (s.done ? 'var(--paid)' : 'var(--line-strong)'),
         background: s.done ? 'var(--paid)' : 'transparent',
         display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {s.done && <Icon name="check" size={15} color="#fff" stroke={2.2} />}
-      </div>
+      </button>
       <span style={{ flex: 1, font: '500 15px/1.1 var(--font-sans)',
         color: s.done ? 'var(--ink-3)' : 'var(--ink)', textDecoration: s.done ? 'line-through' : 'none' }}>
         {s.title}
       </span>
       <PersonDot who={s.added_by || 'shared'} size={7} />
+      <button onClick={() => onRemove(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0, flexShrink: 0 }}>
+        <Icon name="close" size={16} color="var(--ink-3)" />
+      </button>
     </div>
   )
 }
