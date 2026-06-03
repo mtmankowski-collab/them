@@ -333,13 +333,14 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
                 <div style={{ padding: '13px 15px', flex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>
                     <div style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--ink)' }}>
-                      {e.time_start ? e.time_start.slice(0,5) : 'cały dzień'}
+                      {e.time_start ? e.time_start.slice(0,5) : 'Cały dzień'}
                     </div>
                   </div>
                   <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--line)' }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)' }}>{e.title}</div>
                     {e.location && <div style={{ font: '400 12.5px/1 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>{e.location}</div>}
+                    {e.date_end && <div style={{ font: '400 11.5px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 4 }}>do {e.date_end}</div>}
                   </div>
                   <Icon name="chevron" size={17} color="var(--ink-3)" />
                   <Avatar who={e.owner} size={28} />
@@ -352,6 +353,12 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
         <EmptyState icon="calendar" title="Na razie pusto" sub="Brak wydarzeń. Dodajcie coś nowego."
           action={<AddBtn label="Dodaj wydarzenie" onClick={openAdd} />} />
       ) : null}
+
+      {dayEvs.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <AddBtn label="Dodaj wydarzenie" onClick={openAdd} />
+        </div>
+      )}
 
       <Sheet open={addOpen} title={editItem ? 'Edytuj wydarzenie' : 'Nowe wydarzenie'}
         onClose={() => { setAddOpen(false); setEditItem(null) }}

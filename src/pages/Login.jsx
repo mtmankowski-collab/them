@@ -30,9 +30,9 @@ export default function Login({ onUnlock }) {
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: 'var(--cream)', display: 'flex',
-      flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '76px 30px 40px' }}>
+      flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 30px 40px', gap: 40 }}>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, marginTop: 18 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
         <div style={{ width: 64, height: 64, borderRadius: '24%', background: 'var(--ink)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--sh-2)' }}>
           <span style={{ font: `700 46px/1 ${SERIF}`, color: 'var(--cream)' }}>M</span>
@@ -46,7 +46,7 @@ export default function Login({ onUnlock }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
         <div style={{ font: '500 11px/1 var(--font-sans)', letterSpacing: '.14em', textTransform: 'uppercase',
           color: 'var(--ink-3)' }}>Wprowadź PIN</div>
         <div style={{ display: 'flex', gap: 16, animation: shake ? 'them-shake .45s ease' : 'none' }}>
