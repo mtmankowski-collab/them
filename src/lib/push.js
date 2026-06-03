@@ -45,7 +45,7 @@ export async function subscribeToPush() {
 
 export async function sendPush(title, body, tag = 'them') {
   try {
-    await fetch('/api/send-push', {
+    const res = await fetch('/api/send-push', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -53,5 +53,9 @@ export async function sendPush(title, body, tag = 'them') {
       },
       body: JSON.stringify({ title, body, tag }),
     })
-  } catch {}
+    const data = await res.json().catch(() => ({}))
+    console.log('sendPush response:', res.status, data)
+  } catch (e) {
+    console.error('sendPush error:', e)
+  }
 }
