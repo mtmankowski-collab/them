@@ -37,6 +37,14 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
   const [year, setYear] = useState(initD.getFullYear())
   const [month, setMonth] = useState(initD.getMonth())
   const [sel, setSel] = useState(initD.getDate())
+
+  useEffect(() => {
+    if (!initialDate) return
+    const d = new Date(initialDate + 'T12:00:00')
+    setYear(d.getFullYear())
+    setMonth(d.getMonth())
+    setSel(d.getDate())
+  }, [initialDate])
   const [marks, setMarks] = useState({})
   const [birthdayMarks, setBirthdayMarks] = useState({})
   const [dayEvs, setDayEvs] = useState([])

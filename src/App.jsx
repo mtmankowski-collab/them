@@ -48,6 +48,18 @@ export default function App() {
   }, [dark])
 
   useEffect(() => {
+    const handler = e => {
+      if (e.data?.type === 'NAVIGATE') {
+        const params = new URLSearchParams(e.data.url.split('?')[1] || '')
+        const date = params.get('date')
+        if (date) { setCalendarDate(date); setPage('calendar'); setSub(null) }
+      }
+    }
+    navigator.serviceWorker?.addEventListener('message', handler)
+    return () => navigator.serviceWorker?.removeEventListener('message', handler)
+  }, [])
+
+  useEffect(() => {
     if (!unlocked) return
     supabase.from('shopping').select('id', { count: 'exact' }).eq('done', false).then(({ count }) => setShoppingCount(count || 0))
     supabase.from('knowledge').select('id', { count: 'exact' }).then(({ count }) => setKnowledgeCount(count || 0))
