@@ -2,9 +2,8 @@ import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 
 const VAPID_PUBLIC = 'BMcZb5l5aEogdz6Q_RkxuZvVED3ty88cMIMgfusmbXUXkosDzmiPu5QtZBbVGvUv-9oM3r-0Z12yjpOt7leSgI0'
-const VAPID_PRIVATE = 'xbI6ic-kBPNwRRkF9eEAcCWyiA1Oa8efK_J3qnR3wEM'
 
-webpush.setVapidDetails('mailto:mt.mankowski@gmail.com', VAPID_PUBLIC, VAPID_PRIVATE)
+webpush.setVapidDetails('mailto:mt.mankowski@gmail.com', VAPID_PUBLIC, process.env.VAPID_PRIVATE_KEY)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
