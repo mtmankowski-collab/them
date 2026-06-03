@@ -4,6 +4,10 @@ import { Avatar, PersonDot, Label, Card, Segmented, SectionTitle } from '../comp
 import { supabase, personColor, PEOPLE } from '../lib/supabase'
 
 const SERIF = "'Bodoni Moda', Georgia, serif"
+
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
 const MONTH_NAMES = ['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia']
 const DAY_NAMES = ['Niedziela','Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota']
 
@@ -22,7 +26,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
   const greeting = (h >= 6 && h < 18) ? 'Dzień dobry' : 'Dobry wieczór'
 
   useEffect(() => {
-    const today = now.toISOString().split('T')[0]
+    const today = localDateStr(now)
     const todayMD = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}`
     supabase.from('events').select('*').eq('date', today).order('time_start', { nullsFirst: true }).then(({ data }) => {
       supabase.from('birthdays').select('*').then(({ data: bdays }) => {
@@ -185,7 +189,7 @@ function WeekView() {
       d.setDate(d.getDate() + i)
       days.push(d)
     }
-    const dateStrs = days.map(d => d.toISOString().split('T')[0])
+    const dateStrs = days.map(d => localDateStr(d))
     supabase.from('events').select('*')
       .or(`and(date.lte.${dateStrs[6]},date_end.gte.${dateStrs[0]}),and(date.gte.${dateStrs[0]},date.lte.${dateStrs[6]})`)
       .order('date').order('time_start')
@@ -194,7 +198,7 @@ function WeekView() {
           const bdEvs = []
           days.forEach(d => {
             const md = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`
-            const dateStr = d.toISOString().split('T')[0]
+            const dateStr = localDateStr(d)
             ;(bdays || []).filter(b => b.date === md).forEach(b => {
               bdEvs.push({ id: 'bd-' + b.id + '-' + dateStr, date: dateStr, title: `🎂 ${b.name}`, time_start: null, owner: 'birthday', isBirthday: true })
             })
@@ -209,7 +213,7 @@ function WeekView() {
   for (let i = 0; i < 7; i++) {
     const d = new Date(now)
     d.setDate(d.getDate() + i)
-    const dateStr = d.toISOString().split('T')[0]
+    const dateStr = localDateStr(d)
     days.push({ d, dateStr, isToday: i === 0 })
   }
 
