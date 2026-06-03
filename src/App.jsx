@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { requestNotificationPermission } from './lib/notifications'
 import Login from './pages/Login'
 import Today from './pages/Today'
 import Calendar from './pages/Calendar'
@@ -24,6 +25,7 @@ export default function App() {
   const [sub, setSub] = useState(null)
   const [dark, setDark] = useState(() => localStorage.getItem('them_dark') === '1')
 
+  // more screen counts
   const [shoppingCount, setShoppingCount] = useState(0)
   const [knowledgeCount, setKnowledgeCount] = useState(0)
   const [placesCount, setPlacesCount] = useState(0)
@@ -50,6 +52,8 @@ export default function App() {
   function handleUnlock() {
     sessionStorage.setItem('them_unlocked', '1')
     setUnlocked(true)
+    // Request notification permission after unlock
+    setTimeout(() => requestNotificationPermission(), 2000)
   }
 
   function handleLogout() {
