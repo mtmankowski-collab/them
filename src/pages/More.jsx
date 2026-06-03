@@ -13,6 +13,7 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
     if (!('Notification' in window)) return 'unsupported'
     return Notification.permission
   })
+  const [notifRefreshed, setNotifRefreshed] = useState(false)
   const [pinF, setPinF] = useState({ current: '', next: '', confirm: '' })
   const [pinError, setPinError] = useState('')
   const [pinSuccess, setPinSuccess] = useState(false)
@@ -27,7 +28,8 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
 
   async function enableNotifications() {
     if (notifStatus === 'granted') {
-      await subscribeToPush()
+      const ok = await subscribeToPush()
+      if (ok) { setNotifRefreshed(true); setTimeout(() => setNotifRefreshed(false), 2000) }
       return
     }
     const granted = await requestNotificationPermission()
@@ -58,7 +60,7 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
     setTimeout(() => setPinSheetOpen(false), 1200)
   }
 
-  const notifLabel = notifStatus === 'granted' ? 'Włączone — kliknij aby odświeżyć' : notifStatus === 'denied' ? 'Zablokowane (zmień w przeglądarce)' : notifStatus === 'unsupported' ? 'Niedostępne' : 'Włącz powiadomienia'
+  const notifLabel = notifRefreshed ? 'Zarejestrowano ✓' : notifStatus === 'granted' ? 'Włączone — kliknij aby odświeżyć' : notifStatus === 'denied' ? 'Zablokowane (zmień w przeglądarce)' : notifStatus === 'unsupported' ? 'Niedostępne' : 'Włącz powiadomienia'
 
   return (
     <div className="screen">
