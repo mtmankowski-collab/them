@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
-import { Card, ScreenHead, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput } from '../components/ui'
+import { Card, ScreenHead, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, PersonPicker } from '../components/ui'
 import { supabase } from '../lib/supabase'
 
 const SERIF = "'Bodoni Moda', Georgia, serif"
@@ -10,7 +10,7 @@ export default function Trips({ onBack }) {
   const [trips, setTrips] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ destination: '', country: '' })
+  const [f, setF] = useState({ destination: '', country: '', added_by: 'shared' })
   const [insertError, setInsertError] = useState('')
 
   useEffect(() => {
@@ -19,13 +19,13 @@ export default function Trips({ onBack }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ destination: '', country: '' })
+    setF({ destination: '', country: '', added_by: 'shared' })
     setAddOpen(true)
   }
 
   function openEdit(t) {
     setEditItem(t)
-    setF({ destination: t.destination || '', country: t.country || '' })
+    setF({ destination: t.destination || '', country: t.country || '', added_by: t.added_by || 'shared' })
     setAddOpen(true)
   }
 
@@ -34,7 +34,7 @@ export default function Trips({ onBack }) {
     setInsertError('')
     if (editItem) {
       const { error } = await supabase.from('vacations').update({
-        destination: f.destination.trim(), country: f.country,
+        destination: f.destination.trim(), country: f.country, added_by: f.added_by,
       }).eq('id', editItem.id)
       if (error) { setInsertError(error.message); return }
       setTrips(prev => prev.map(t => t.id === editItem.id
@@ -42,7 +42,7 @@ export default function Trips({ onBack }) {
         : t))
     } else {
       const { data, error } = await supabase.from('vacations').insert({
-        destination: f.destination.trim(), country: f.country || '',
+        destination: f.destination.trim(), country: f.country || '', added_by: f.added_by,
       }).select().single()
       if (error) { setInsertError(error.message); return }
       if (data) setTrips(prev => [...prev, data])
@@ -99,6 +99,7 @@ export default function Trips({ onBack }) {
           background: 'rgba(182,84,63,.08)', borderRadius: 8, border: '1px solid rgba(182,84,63,.2)' }}>{insertError}</div>}
         <Field label="Miejsce"><TextInput value={f.destination} onChange={v => setF(p=>({...p,destination:v}))} placeholder="np. Barcelona" /></Field>
         <Field label="Kraj"><TextInput value={f.country} onChange={v => setF(p=>({...p,country:v}))} placeholder="Hiszpania" /></Field>
+        <Field label="Kto planuje"><PersonPicker value={f.added_by} onChange={v => setF(p=>({...p,added_by:v}))} /></Field>
       </Sheet>
     </div>
   )

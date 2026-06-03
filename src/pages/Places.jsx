@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
-import { Stars, Card, ScreenHead, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, ChipPicker } from '../components/ui'
+import { Stars, Card, ScreenHead, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, ChipPicker, PersonPicker } from '../components/ui'
 import { supabase } from '../lib/supabase'
 
 const CATS = ['Jedzenie', 'Aktywność']
@@ -22,7 +22,7 @@ export default function Places({ onBack }) {
   const [cat, setCat] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ name: '', category: 'Jedzenie', city: '', notes: '', map_url: '' })
+  const [f, setF] = useState({ name: '', category: 'Jedzenie', city: '', notes: '', map_url: '', added_by: 'shared' })
   const [insertError, setInsertError] = useState('')
 
   useEffect(() => {
@@ -33,14 +33,14 @@ export default function Places({ onBack }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ name: '', category: 'Jedzenie', city: '', notes: '', map_url: '' })
+    setF({ name: '', category: 'Jedzenie', city: '', notes: '', map_url: '', added_by: 'shared' })
     setAddOpen(true)
   }
 
   function openEdit(p) {
     setEditItem(p)
     const { notes, mapUrl } = decodeNotes(p.notes)
-    setF({ name: p.name, category: p.category || 'Jedzenie', city: p.city || '', notes, map_url: mapUrl })
+    setF({ name: p.name, category: p.category || 'Jedzenie', city: p.city || '', notes, map_url: mapUrl, added_by: p.added_by || 'shared' })
     setAddOpen(true)
   }
 
@@ -50,7 +50,7 @@ export default function Places({ onBack }) {
     const encodedNotes = encodeNotes(f.notes, f.map_url)
     if (editItem) {
       const { error } = await supabase.from('places').update({
-        name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes,
+        name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes, added_by: f.added_by,
       }).eq('id', editItem.id)
       if (error) { setInsertError(error.message); return }
       setPlaces(prev => prev.map(p => p.id === editItem.id
@@ -58,7 +58,7 @@ export default function Places({ onBack }) {
         : p))
     } else {
       const { data, error } = await supabase.from('places').insert({
-        name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes, rating: 0,
+        name: f.name.trim(), category: f.category, city: f.city, notes: encodedNotes, rating: 0, added_by: f.added_by,
       }).select().single()
       if (error) { setInsertError(error.message); return }
       if (data) setPlaces(prev => [data, ...prev])
@@ -143,6 +143,7 @@ export default function Places({ onBack }) {
         <Field label="Miasto / dzielnica"><TextInput value={f.city} onChange={v => setF(p=>({...p,city:v}))} placeholder="Mokotów" /></Field>
         <Field label="Notatka"><TextInput value={f.notes} onChange={v => setF(p=>({...p,notes:v}))} placeholder="Co tam lubicie" /></Field>
         <Field label="Link Google Maps (opcjonalnie)"><TextInput value={f.map_url} onChange={v => setF(p=>({...p,map_url:v}))} placeholder="https://maps.google.com/..." /></Field>
+        <Field label="Kto dodaje"><PersonPicker value={f.added_by} onChange={v => setF(p=>({...p,added_by:v}))} /></Field>
       </Sheet>
     </div>
   )

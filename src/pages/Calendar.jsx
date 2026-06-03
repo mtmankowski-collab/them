@@ -100,7 +100,6 @@ export default function Calendar({ onGoBirthdays }) {
         notifyNewEvent(f.title, date, f.time)
         scheduleUpcomingEventNotifications([data])
       }
-      // If birthday checkbox checked, also save to birthdays localStorage
       if (f.isBirthday && f.title.trim()) {
         const bdDay = String(dayNum).padStart(2, '0')
         const bdMonth = String(month + 1).padStart(2, '0')
@@ -141,11 +140,10 @@ export default function Calendar({ onGoBirthdays }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false })
+    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, day: String(sel) })
     setAddOpen(true)
   }
 
-  // Birthday events for selected day
   const selBirthdays = (() => {
     try {
       const bdays = JSON.parse(localStorage.getItem(LS_BIRTHDAYS)) || []
@@ -185,7 +183,6 @@ export default function Calendar({ onGoBirthdays }) {
             const bd = birthdayMarks[d] || []
             const isSel = d === sel
             const isToday = d === now.getDate() && month === now.getMonth() && year === now.getFullYear()
-            const allDots = [...ev.slice(0,2), ...bd.slice(0,1)]
             return (
               <button key={d} onClick={() => setSel(d)} style={{ aspectRatio: '1', border: isToday && !isSel ? '1.5px solid var(--a)' : 'none',
                 cursor: 'pointer', background: isSel ? 'var(--ink)' : 'transparent', borderRadius: 12,
@@ -262,7 +259,7 @@ export default function Calendar({ onGoBirthdays }) {
         <Field label="Wydarzenie"><TextInput value={f.title} onChange={v => setF(p => ({...p, title: v}))} placeholder="np. Wizyta u lekarza" /></Field>
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}><Field label="Godzina"><TextInput value={f.time} onChange={v => setF(p => ({...p, time: v}))} placeholder="12:00" /></Field></div>
-          <div style={{ width: 110 }}><Field label={`Dzień (${MONTHS[month].slice(0,3)})`}><TextInput value={f.day || String(sel)} onChange={v => setF(p => ({...p, day: v}))} type="number" placeholder={String(sel)} /></Field></div>
+          <div style={{ width: 110 }}><Field label={`Dzień (${MONTHS[month].slice(0,3)})`}><TextInput value={f.day ?? String(sel)} onChange={v => setF(p => ({...p, day: v}))} placeholder={String(sel)} /></Field></div>
         </div>
         <Field label="Miejsce (opcjonalnie)"><TextInput value={f.location} onChange={v => setF(p => ({...p, location: v}))} placeholder="np. ul. Lipowa 4" /></Field>
         <Field label="Kto"><PersonPicker value={f.owner} onChange={v => setF(p => ({...p, owner: v}))} /></Field>
