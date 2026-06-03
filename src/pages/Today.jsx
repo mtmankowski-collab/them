@@ -187,7 +187,7 @@ function WeekView() {
     }
     const dateStrs = days.map(d => d.toISOString().split('T')[0])
     supabase.from('events').select('*')
-      .gte('date', dateStrs[0]).lte('date', dateStrs[6])
+      .or(`and(date.lte.${dateStrs[6]},date_end.gte.${dateStrs[0]}),and(date.gte.${dateStrs[0]},date.lte.${dateStrs[6]})`)
       .order('date').order('time_start')
       .then(({ data: evs }) => {
         supabase.from('birthdays').select('*').then(({ data: bdays }) => {
@@ -216,7 +216,11 @@ function WeekView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
       {days.map(({ d, dateStr, isToday }) => {
-        const items = weekEvents.filter(e => e.date === dateStr)
+        const items = weekEvents.filter(e => {
+          if (e.date === dateStr) return true
+          if (e.date_end) return e.date <= dateStr && e.date_end >= dateStr
+          return false
+        })
         return (
           <Card key={dateStr} pad={0} style={{ overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'stretch' }}>
