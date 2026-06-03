@@ -1,11 +1,10 @@
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 
-webpush.setVapidDetails(
-  'mailto:mt.mankowski@gmail.com',
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-)
+const VAPID_PUBLIC = 'BMcZb5l5aEogdz6Q_RkxuZvVED3ty88cMIMgfusmbXUXkosDzmiPu5QtZBbVGvUv-9oM3r-0Z12yjpOt7leSgI0'
+const VAPID_PRIVATE = 'xbI6ic-kBPNwRRkF9eEAcCWyiA1Oa8efK_J3qnR3wEM'
+
+webpush.setVapidDetails('mailto:mt.mankowski@gmail.com', VAPID_PUBLIC, VAPID_PRIVATE)
 
 export default async function handler(req, res) {
   // Protect cron endpoint
