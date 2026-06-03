@@ -10,6 +10,9 @@ webpush.setVapidDetails(
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
+  const token = req.headers['x-push-token']
+  if (!token || token !== process.env.CRON_SECRET) return res.status(401).end()
+
   const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_KEY

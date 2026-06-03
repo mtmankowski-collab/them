@@ -37,7 +37,10 @@ export async function sendPush(title, body, tag = 'them') {
   try {
     await fetch('/api/send-push', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-push-token': import.meta.env.VITE_PUSH_TOKEN || '',
+      },
       body: JSON.stringify({ title, body, tag }),
     })
   } catch {}
