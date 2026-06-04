@@ -528,7 +528,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
       {deleteSeriesOpen && createPortal(
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10001, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
           onClick={() => setDeleteSeriesOpen(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '28px 20px 44px', width: '100%', maxWidth: 480, animation: 'them-slideup .22s cubic-bezier(.2,.9,.3,1)' }}>
+          <div onClick={e => e.stopPropagation()} tabIndex={-1} style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '28px 20px 44px', width: '100%', maxWidth: 480, animation: 'them-slideup .22s cubic-bezier(.2,.9,.3,1)', outline: 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <div style={{ font: `600 17px/1.3 var(--font-sans)`, color: 'var(--ink)' }}>Usuń wydarzenie cykliczne</div>
               <button onClick={() => setDeleteSeriesOpen(false)} style={{ background: 'var(--cream-warm)', border: '1px solid var(--line)', width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
@@ -537,10 +537,10 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
             </div>
             <div style={{ font: `400 14px/1.5 var(--font-sans)`, color: 'var(--ink-2)', marginBottom: 24 }}>To wydarzenie jest częścią serii cotygodniowej. Co chcesz usunąć?</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button onClick={() => deleteEvent(false)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--line)', background: 'var(--surface)', font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', textAlign: 'left' }}>
+              <button tabIndex={-1} onFocus={e => e.target.blur()} onClick={() => deleteEvent(false)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--line)', background: 'var(--surface)', font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', textAlign: 'left' }}>
                 Tylko to wydarzenie
               </button>
-              <button onClick={() => deleteEvent(true)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid #e53935', background: 'transparent', font: '500 15px/1 var(--font-sans)', color: '#e53935', cursor: 'pointer', textAlign: 'left' }}>
+              <button tabIndex={-1} onFocus={e => e.target.blur()} onClick={() => deleteEvent(true)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid #e53935', background: 'transparent', font: '500 15px/1 var(--font-sans)', color: '#e53935', cursor: 'pointer', textAlign: 'left' }}>
                 Całą serię (52 wydarzenia)
               </button>
             </div>
