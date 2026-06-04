@@ -68,7 +68,7 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
 
       <Card pad={14} style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 13 }}>
         <div style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--line)' }}>
-          <img src="/couple.jpg" alt="Maniek & Ula" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+          <img src="/icons/couple.jpg" alt="Maniek & Ula" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ font: `500 17px/1.1 ${SERIF}`, color: 'var(--ink)' }}>Maniek &amp; Ula</div>
