@@ -4,7 +4,7 @@ import { PersonDot, Card, ScreenHead, EmptyState, SectionTitle, AddBtn, navBtn, 
 import { Avatar } from '../components/ui'
 import { supabase, personColor } from '../lib/supabase'
 import { scheduleUpcomingEventNotifications } from '../lib/notifications'
-import { sendPush } from '../lib/push'
+import { notifyOther } from '../lib/notify'
 
 const DAYS = ['Pn','Wt','Śr','Cz','Pt','So','Nd']
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
@@ -173,7 +173,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
         const selDate = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
         if (date === selDate) setDayEvs(prev => [...prev, data].sort((a,b) => (a.time_start||'').localeCompare(b.time_start||'')))
         const timeLabel = f.allDay ? 'cały dzień' : f.time
-        sendPush(`📅 Nowe wydarzenie`, `${f.title} · ${date} · ${timeLabel}`, 'calendar', `/?date=${date}`)
+        notifyOther(`📅 Nowe wydarzenie`, `${f.title} · ${date} · ${timeLabel}`, `/?date=${date}`)
         scheduleUpcomingEventNotifications([data])
       }
     }
