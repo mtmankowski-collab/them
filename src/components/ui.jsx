@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Icon from './Icon'
 import { PEOPLE, personColor, personSoft } from '../lib/supabase'
+import maniekPhoto from '../assets/maniek.jpg'
+import ulaPhoto from '../assets/ula.jpg'
+
+const PERSON_PHOTOS = { a: maniekPhoto, b: ulaPhoto }
 
 export function Avatar({ who, size = 34 }) {
   const p = PEOPLE[who] || PEOPLE.shared
@@ -11,6 +15,15 @@ export function Avatar({ who, size = 34 }) {
         boxShadow: 'inset 0 0 0 1px rgba(42,38,34,.08)', flexShrink: 0 }}>
         <div style={{ width: '50%', background: 'var(--a)' }} />
         <div style={{ width: '50%', background: 'var(--b)' }} />
+      </div>
+    )
+  }
+  const photo = PERSON_PHOTOS[who]
+  if (photo) {
+    return (
+      <div style={{ width: size, height: size, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+        boxShadow: 'inset 0 0 0 1px rgba(42,38,34,.08)' }}>
+        <img src={photo} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
       </div>
     )
   }
