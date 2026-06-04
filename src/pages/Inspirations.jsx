@@ -13,7 +13,8 @@ const CATS = [
 export default function Inspirations({ onBack }) {
   const [items, setItems] = useState([])
   const [cat, setCat] = useState('ula')
-  const [addOpen, setAddOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [editItem, setEditItem] = useState(null)
   const [f, setF] = useState({ cat: 'ula', title: '', description: '', url: '' })
 
   useEffect(() => {
@@ -21,23 +22,44 @@ export default function Inspirations({ onBack }) {
       .then(({ data }) => setItems(data || []))
   }, [])
 
-  async function addItem() {
-    if (!f.title.trim()) return
-    const { data } = await supabase.from('inspirations').insert({
-      id: Date.now(),
-      cat: f.cat,
-      title: f.title.trim(),
-      description: f.description.trim(),
-      url: f.url.trim(),
-    }).select().single()
-    if (data) setItems(prev => [data, ...prev])
-    setAddOpen(false)
-    setF({ cat: 'ula', title: '', description: '', url: '' })
+  function openAdd() {
+    setEditItem(null)
+    setF({ cat, title: '', description: '', url: '' })
+    setSheetOpen(true)
   }
 
-  async function removeItem(id) {
-    await supabase.from('inspirations').delete().eq('id', id)
-    setItems(prev => prev.filter(i => i.id !== id))
+  function openEdit(item) {
+    setEditItem(item)
+    setF({ cat: item.cat, title: item.title, description: item.description || '', url: item.url || '' })
+    setSheetOpen(true)
+  }
+
+  function closeSheet() {
+    setSheetOpen(false)
+    setEditItem(null)
+  }
+
+  async function submit() {
+    if (!f.title.trim()) return
+    if (editItem) {
+      const { data } = await supabase.from('inspirations').update({
+        cat: f.cat, title: f.title.trim(), description: f.description.trim(), url: f.url.trim(),
+      }).eq('id', editItem.id).select().single()
+      if (data) setItems(prev => prev.map(i => i.id === editItem.id ? data : i))
+    } else {
+      const { data } = await supabase.from('inspirations').insert({
+        id: Date.now(), cat: f.cat, title: f.title.trim(), description: f.description.trim(), url: f.url.trim(),
+      }).select().single()
+      if (data) setItems(prev => [data, ...prev])
+    }
+    closeSheet()
+  }
+
+  async function deleteItem() {
+    if (!editItem) return
+    await supabase.from('inspirations').delete().eq('id', editItem.id)
+    setItems(prev => prev.filter(i => i.id !== editItem.id))
+    closeSheet()
   }
 
   const filtered = items.filter(i => i.cat === cat)
@@ -46,7 +68,7 @@ export default function Inspirations({ onBack }) {
   return (
     <div className="screen" style={{ position: 'relative' }}>
       <ScreenHead title="Inspiracje" sub="Zakupowe linki i pomysły" onBack={onBack} right={
-        <button style={navBtn} onClick={() => setAddOpen(true)}><Icon name="plus" size={20} color="var(--ink)" /></button>
+        <button style={navBtn} onClick={openAdd}><Icon name="plus" size={20} color="var(--ink)" /></button>
       } />
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
@@ -65,7 +87,7 @@ export default function Inspirations({ onBack }) {
       {filtered.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map(item => (
-            <Card key={item.id} pad={14}>
+            <Card key={item.id} pad={14} onClick={() => openEdit(item)} style={{ cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)', marginBottom: 4 }}>{item.title}</div>
@@ -75,6 +97,7 @@ export default function Inspirations({ onBack }) {
                     try { hostname = new URL(item.url).hostname.replace('www.','') } catch {}
                     return (
                       <a href={item.url} target="_blank" rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 5, font: '500 12.5px/1 var(--font-sans)',
                           color: catObj.color, textDecoration: 'none' }}>
                         <Icon name="external" size={14} color={catObj.color} />
@@ -83,20 +106,21 @@ export default function Inspirations({ onBack }) {
                     )
                   })()}
                 </div>
-                <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer',
-                  padding: 4, lineHeight: 0, flexShrink: 0 }}>
-                  <Icon name="close" size={16} color="var(--ink-3)" />
-                </button>
+                <Icon name="chevron" size={16} color="var(--ink-3)" style={{ flexShrink: 0, marginTop: 2 }} />
               </div>
             </Card>
           ))}
         </div>
       ) : (
         <EmptyState icon="tag" title="Brak inspiracji" sub={`Dodajcie linki do rzeczy dla ${catObj.label}.`}
-          action={<AddBtn label="Dodaj link" onClick={() => setAddOpen(true)} />} />
+          action={<AddBtn label="Dodaj link" onClick={openAdd} />} />
       )}
 
-      <Sheet open={addOpen} title="Nowa inspiracja" onClose={() => setAddOpen(false)} onSubmit={addItem} submitLabel="Zapisz" accent="var(--a)">
+      <Sheet open={sheetOpen} title={editItem ? 'Edytuj inspirację' : 'Nowa inspiracja'}
+        onClose={closeSheet} onSubmit={submit}
+        submitLabel={editItem ? 'Zapisz zmiany' : 'Zapisz'}
+        onDelete={editItem ? deleteItem : undefined}
+        accent="var(--a)">
         <Field label="Co to"><TextInput value={f.title} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Lniana sukienka" /></Field>
         <Field label="Dla kogo"><ChipPicker value={f.cat} onChange={v => setF(p=>({...p,cat:v}))} options={CATS.map(c => ({ value: c.value, label: c.label }))} /></Field>
         <Field label="Opis (opcjonalnie)"><TextInput value={f.description} onChange={v => setF(p=>({...p,description:v}))} placeholder="kolor, rozmiar, na kiedy" /></Field>
