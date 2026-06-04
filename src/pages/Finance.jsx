@@ -63,7 +63,7 @@ export default function Finance() {
     setEditItem(null)
     setF(mode === 'expenses'
       ? { title: '', amount: '', category: 'Jedzenie', added_by: 'a' }
-      : { title: '', amount: '', category: 'Inne' })
+      : { title: '', amount: '', category: 'Inne', paid_by: 'a' })
     setAddOpen(true)
   }
 
@@ -75,7 +75,7 @@ export default function Finance() {
 
   function openEditBill(b) {
     setEditItem({ ...b, _type: 'bill' })
-    setF({ title: b.title, amount: String(b.amount || ''), category: b.category || 'Inne' })
+    setF({ title: b.title, amount: String(b.amount || ''), category: b.category || 'Inne', paid_by: b.paid_by || 'a' })
     setAddOpen(true)
   }
 
@@ -85,8 +85,8 @@ export default function Finance() {
       await supabase.from('expenses').update({ title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category, added_by: f.added_by }).eq('id', editItem.id)
       setExpenses(prev => prev.map(e => e.id === editItem.id ? { ...e, title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category, added_by: f.added_by } : e))
     } else if (editItem?._type === 'bill') {
-      await supabase.from('bills').update({ title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category }).eq('id', editItem.id)
-      setBills(prev => prev.map(b => b.id === editItem.id ? { ...b, title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category } : b))
+      await supabase.from('bills').update({ title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category, paid_by: f.paid_by }).eq('id', editItem.id)
+      setBills(prev => prev.map(b => b.id === editItem.id ? { ...b, title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category, paid_by: f.paid_by } : b))
     } else if (mode === 'expenses') {
       const { data } = await supabase.from('expenses').insert({
         title: f.title.trim(), amount: parseFloat(f.amount) || 0,
@@ -97,7 +97,7 @@ export default function Finance() {
     } else {
       const { data } = await supabase.from('bills').insert({
         title: f.title.trim(), amount: parseFloat(f.amount) || 0,
-        category: f.category, paid_months: [],
+        category: f.category, paid_by: f.paid_by || 'a', paid_months: [],
       }).select().single()
       if (data) setBills(prev => [...prev, data].sort((a,b) => a.title.localeCompare(b.title)))
     }
@@ -295,7 +295,10 @@ export default function Finance() {
                     </div>
                     <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => openEditBill(b)}>
                       <div style={{ font: '500 14.5px/1.1 var(--font-sans)', color: 'var(--ink)' }}>{b.title}</div>
-                      <div style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 3 }}>{b.paid ? 'Opłacone · ' : ''}{cat}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                        <PersonDot who={b.paid_by || 'a'} size={6} />
+                        <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)' }}>{b.paid ? 'Opłacone · ' : ''}{cat}</span>
+                      </div>
                     </div>
                     <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', whiteSpace: 'nowrap' }}>
                       {b.amount?.toLocaleString('pl')} zł
@@ -324,6 +327,7 @@ export default function Finance() {
           <Field label="Nazwa opłaty"><TextInput value={f.title||''} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Prąd" /></Field>
           <Field label="Kwota"><TextInput value={f.amount||''} onChange={v => setF(p=>({...p,amount:v}))} type="number" placeholder="0" prefix="zł" /></Field>
           <Field label="Kategoria"><ChipPicker value={f.category||'Inne'} onChange={v => setF(p=>({...p,category:v}))} options={CATS} /></Field>
+          <Field label="Kto płaci"><PersonPicker excludeShared value={f.paid_by||'a'} onChange={v => setF(p=>({...p,paid_by:v}))} /></Field>
         </>}
       </Sheet>
     </div>
