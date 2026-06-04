@@ -537,12 +537,17 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
             </div>
             <div style={{ font: `400 14px/1.5 var(--font-sans)`, color: 'var(--ink-2)', marginBottom: 24 }}>To wydarzenie jest częścią serii cotygodniowej. Co chcesz usunąć?</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={() => deleteEvent(false)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--line)', background: 'var(--surface)', font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', textAlign: 'left' }}>
+              <button tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={() => deleteEvent(false)}
+                className="series-del-btn"
+                style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--line)', background: 'var(--surface)', font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
                 Tylko to wydarzenie
               </button>
-              <button tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={() => deleteEvent(true)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid #e53935', background: 'transparent', font: '500 15px/1 var(--font-sans)', color: '#e53935', cursor: 'pointer', textAlign: 'left' }}>
-                Całą serię (52 wydarzenia)
+              <button tabIndex={-1} onMouseDown={e => e.preventDefault()} onClick={() => deleteEvent(true)}
+                className="series-del-btn series-del-btn--danger"
+                style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--line)', background: 'var(--surface)', font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+                Usuń całą serię
               </button>
+              <style>{`.series-del-btn:active { background: var(--cream-warm) !important; } .series-del-btn--danger:active { border-color: #e53935 !important; color: #e53935 !important; background: transparent !important; }`}</style>
             </div>
           </div>
         </div>,
