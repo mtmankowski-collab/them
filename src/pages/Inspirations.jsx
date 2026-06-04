@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
-import { Card, ScreenHead, SectionTitle, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, ChipPicker } from '../components/ui'
+import { Card, ScreenHead, EmptyState, AddBtn, navBtn, Sheet, Field, TextInput, ChipPicker } from '../components/ui'
+import { supabase } from '../lib/supabase'
 
-const LS_KEY = 'them_inspirations'
 const CATS = [
   { value: 'ula',    label: 'Ula',     color: 'var(--b)' },
   { value: 'maniek', label: 'Maniek',  color: 'var(--a)' },
@@ -14,31 +14,30 @@ export default function Inspirations({ onBack }) {
   const [items, setItems] = useState([])
   const [cat, setCat] = useState('ula')
   const [addOpen, setAddOpen] = useState(false)
-  const [f, setF] = useState({ cat: 'ula', title: '', desc: '', url: '' })
+  const [f, setF] = useState({ cat: 'ula', title: '', description: '', url: '' })
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(LS_KEY))
-      setItems(saved || [])
-    } catch {
-      setItems([])
-    }
+    supabase.from('inspirations').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => setItems(data || []))
   }, [])
 
-  function save(updated) {
-    setItems(updated)
-    localStorage.setItem(LS_KEY, JSON.stringify(updated))
-  }
-
-  function addItem() {
+  async function addItem() {
     if (!f.title.trim()) return
-    save([...items, { id: Date.now(), cat: f.cat, title: f.title.trim(), desc: f.desc.trim(), url: f.url.trim() }])
+    const { data } = await supabase.from('inspirations').insert({
+      id: Date.now(),
+      cat: f.cat,
+      title: f.title.trim(),
+      description: f.description.trim(),
+      url: f.url.trim(),
+    }).select().single()
+    if (data) setItems(prev => [data, ...prev])
     setAddOpen(false)
-    setF({ cat: 'ula', title: '', desc: '', url: '' })
+    setF({ cat: 'ula', title: '', description: '', url: '' })
   }
 
-  function removeItem(id) {
-    save(items.filter(i => i.id !== id))
+  async function removeItem(id) {
+    await supabase.from('inspirations').delete().eq('id', id)
+    setItems(prev => prev.filter(i => i.id !== id))
   }
 
   const filtered = items.filter(i => i.cat === cat)
@@ -70,7 +69,7 @@ export default function Inspirations({ onBack }) {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ font: '500 15px/1.2 var(--font-sans)', color: 'var(--ink)', marginBottom: 4 }}>{item.title}</div>
-                  {item.desc && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>{item.desc}</div>}
+                  {item.description && <div style={{ font: '400 13px/1.4 var(--font-sans)', color: 'var(--ink-2)', marginBottom: 8 }}>{item.description}</div>}
                   {item.url && (() => {
                     let hostname = item.url
                     try { hostname = new URL(item.url).hostname.replace('www.','') } catch {}
@@ -100,7 +99,7 @@ export default function Inspirations({ onBack }) {
       <Sheet open={addOpen} title="Nowa inspiracja" onClose={() => setAddOpen(false)} onSubmit={addItem} submitLabel="Zapisz" accent="var(--a)">
         <Field label="Co to"><TextInput value={f.title} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Lniana sukienka" /></Field>
         <Field label="Dla kogo"><ChipPicker value={f.cat} onChange={v => setF(p=>({...p,cat:v}))} options={CATS.map(c => ({ value: c.value, label: c.label }))} /></Field>
-        <Field label="Opis (opcjonalnie)"><TextInput value={f.desc} onChange={v => setF(p=>({...p,desc:v}))} placeholder="kolor, rozmiar, na kiedy" /></Field>
+        <Field label="Opis (opcjonalnie)"><TextInput value={f.description} onChange={v => setF(p=>({...p,description:v}))} placeholder="kolor, rozmiar, na kiedy" /></Field>
         <Field label="Link do sklepu"><TextInput value={f.url} onChange={v => setF(p=>({...p,url:v}))} placeholder="https://…" /></Field>
       </Sheet>
     </div>
