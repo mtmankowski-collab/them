@@ -120,7 +120,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
       <SectionTitle title="Finanse w tym miesiącu" action="Szczegóły" onAction={onGoFinance} />
       <Card style={{ marginBottom: 14 }} onClick={onGoFinance}>
         <div style={{ marginBottom: 12 }}>
-          <Label style={{ marginBottom: 7 }}>Wydane razem</Label>
+          <Label style={{ marginBottom: 7 }}>Bieżące wydatki</Label>
           <div style={{ font: `500 26px/1 ${SERIF}`, color: 'var(--ink)' }}>
             {totalSpent.toLocaleString('pl', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: 16, color: 'var(--ink-2)' }}>zł</span>
           </div>

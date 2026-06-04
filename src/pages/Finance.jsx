@@ -97,7 +97,7 @@ export default function Finance() {
     } else {
       const { data } = await supabase.from('bills').insert({
         title: f.title.trim(), amount: parseFloat(f.amount) || 0,
-        category: f.category, paid_by: f.paid_by || 'a', paid_months: [],
+        category: f.category, paid_by: f.paid_by || 'a', paid_months: [], due_day: 1,
       }).select().single()
       if (data) setBills(prev => [...prev, data].sort((a,b) => a.title.localeCompare(b.title)))
     }
