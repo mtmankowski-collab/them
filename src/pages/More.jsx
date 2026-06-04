@@ -51,8 +51,8 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
     if (pinF.next !== pinF.confirm) { setPinError('Nowe PINy nie są zgodne'); return }
     // Verify current PIN
     const { data } = await supabase.from('users').select('pin').limit(1).single()
-    const currentPin = data?.pin || '2407'
-    if (pinF.current !== currentPin) { setPinError('Aktualny PIN jest nieprawidłowy'); return }
+    const currentPin = data?.pin
+    if (!currentPin || pinF.current !== currentPin) { setPinError('Aktualny PIN jest nieprawidłowy'); return }
     // Save new PIN
     const { error } = await supabase.from('users').update({ pin: pinF.next }).eq('pin', currentPin)
     if (error) { setPinError('Błąd zapisu — spróbuj ponownie'); return }
@@ -67,7 +67,9 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
       <ScreenHead sub="Wasza przestrzeń" title="Więcej" />
 
       <Card pad={14} style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 13 }}>
-        <Avatar who="shared" size={44} />
+        <div style={{ width: 44, height: 44, borderRadius: 14, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--line)' }}>
+          <img src="/couple.jpg" alt="Maniek & Ula" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+        </div>
         <div style={{ flex: 1 }}>
           <div style={{ font: `500 17px/1.1 ${SERIF}`, color: 'var(--ink)' }}>Maniek &amp; Ula</div>
         </div>
