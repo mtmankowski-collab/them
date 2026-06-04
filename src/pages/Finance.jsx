@@ -171,7 +171,7 @@ export default function Finance() {
           </div>
 
           <Card style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
                 <Label style={{ marginBottom: 8 }}>Wydano {isCurrentMonth ? 'w tym miesiącu' : monthLabel(expMonth).split(' ').slice(0,2).join(' ')}</Label>
                 <div style={{ font: `400 34px/1 ${SERIF}`, color: 'var(--ink)' }}>
