@@ -46,6 +46,7 @@ export default function Finance() {
   const [bills, setBills] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [catFilter, setCatFilter] = useState(null)
   const [f, setF] = useState({})
   const [expMonth, setExpMonth] = useState(curMonth)
 
@@ -155,6 +156,63 @@ export default function Finance() {
   const isEditingBill = editItem?._type === 'bill'
   const isCurrentMonth = expMonth === curMonth
 
+  if (catFilter) {
+    const catExpenses = expenses.filter(e => (CAT_MERGE[e.category] || e.category || 'Inne') === catFilter)
+    const catBills = bills.filter(b => (CAT_MERGE[b.category] || b.category || 'Inne') === catFilter)
+    const catTotal = catAmounts[catFilter] || 0
+    return (
+      <div className="screen">
+        <ScreenHead title={catFilter} sub={`${catTotal.toFixed(2).replace('.',',')} zł · ${Math.round(catTotal / grandTotal * 100)}% wydatków`}
+          right={<button style={navBtn} onClick={() => setCatFilter(null)}><Icon name="close" size={18} color="var(--ink)" /></button>} />
+        {catExpenses.length > 0 && <>
+          <SectionTitle title="Wydatki" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            {catExpenses.map(e => (
+              <Card key={e.id} pad={13} onClick={() => { setCatFilter(null); openEditExpense(e) }} style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ font: '500 14.5px/1.1 var(--font-sans)', color: 'var(--ink)' }}>{e.title}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                      <PersonDot who={e.added_by || 'shared'} size={6} />
+                      <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)' }}>{fmtDate(e.date)}</span>
+                    </div>
+                  </div>
+                  <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', whiteSpace: 'nowrap' }}>
+                    {e.amount?.toFixed(2).replace('.',',')} zł
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>}
+        {catBills.length > 0 && <>
+          <SectionTitle title="Stałe opłaty" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {catBills.map(b => (
+              <Card key={b.id} pad={13} onClick={() => { setCatFilter(null); openEditBill(b) }} style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ font: '500 14.5px/1.1 var(--font-sans)', color: 'var(--ink)' }}>{b.title}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                      <PersonDot who={b.paid_by || 'a'} size={6} />
+                      <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Stała opłata</span>
+                    </div>
+                  </div>
+                  <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', whiteSpace: 'nowrap' }}>
+                    {b.amount?.toLocaleString('pl')} zł
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>}
+        {catExpenses.length === 0 && catBills.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px 0', font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Brak wpisów</div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="screen" style={{ position: 'relative' }}>
       <ScreenHead sub={monthLabel(expMonth)} title="Finanse" right={
@@ -205,12 +263,20 @@ export default function Finance() {
               <div key={c} style={{ width: (catAmounts[c] / grandTotal * 100) + '%', background: CAT_COLORS[c] }} />
             ) : null)}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {CATS.filter(c => catAmounts[c]).map(c => (
-              <div key={c} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <div key={c} onClick={() => setCatFilter(c)}
+                style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '7px 0', cursor: 'pointer',
+                  borderBottom: '1px solid var(--line)' }}>
                 <span style={{ width: 9, height: 9, borderRadius: 3, background: CAT_COLORS[c], flexShrink: 0 }} />
                 <span style={{ flex: 1, font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-2)' }}>{c}</span>
-                <span style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)' }}>{catAmounts[c].toFixed(2).replace('.',',')} zł</span>
+                <span style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)', marginRight: 8 }}>
+                  {Math.round(catAmounts[c] / grandTotal * 100)}%
+                </span>
+                <span style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)', minWidth: 70, textAlign: 'right' }}>
+                  {catAmounts[c].toFixed(2).replace('.',',')} zł
+                </span>
+                <Icon name="chevron" size={14} color="var(--ink-3)" />
               </div>
             ))}
           </div>
