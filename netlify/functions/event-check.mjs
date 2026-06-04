@@ -9,16 +9,14 @@ function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-export default async function handler(req, res) {
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).end()
+export default async (req) => {
+  if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 })
   }
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
-
   const today = localDateStr(new Date())
 
-  // Fetch all events happening today (including multi-day events spanning today)
   const { data: events } = await supabase
     .from('events')
     .select('*')
@@ -28,18 +26,14 @@ export default async function handler(req, res) {
   const { data: subs } = await supabase.from('push_subscriptions').select('*')
 
   if (!subs?.length || !events?.length) {
-    return res.json({ ok: true, sent: 0, events: events?.length || 0 })
+    return Response.json({ ok: true, sent: 0, events: events?.length || 0 })
   }
 
-  const notifications = events.map(e => {
-    const time = e.time_start ? e.time_start.slice(0, 5) : null
-    const body = [time, e.location].filter(Boolean).join(' · ')
-    return {
-      title: `📅 ${e.title}`,
-      body: body || 'Dziś',
-      url: `/?date=${today}`,
-    }
-  })
+  const notifications = events.map(e => ({
+    title: `📅 ${e.title}`,
+    body: [e.time_start?.slice(0,5), e.location].filter(Boolean).join(' · ') || 'Dziś',
+    url: `/?date=${today}`,
+  }))
 
   let sent = 0
   const expired = []
@@ -56,9 +50,8 @@ export default async function handler(req, res) {
     )
     sent += results.filter(r => r.status === 'fulfilled').length
     subs.forEach((sub, i) => {
-      if (results[i].status === 'rejected' && results[i].reason?.statusCode === 410) {
+      if (results[i].status === 'rejected' && results[i].reason?.statusCode === 410)
         expired.push(sub.endpoint)
-      }
     })
   }
 
@@ -66,5 +59,7 @@ export default async function handler(req, res) {
     await supabase.from('push_subscriptions').delete().in('endpoint', [...new Set(expired)])
   }
 
-  res.json({ ok: true, sent, events: notifications.length })
+  return Response.json({ ok: true, sent, events: notifications.length })
 }
+
+export const config = { path: '/api/event-check' }

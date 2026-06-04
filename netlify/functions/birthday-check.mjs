@@ -5,16 +5,12 @@ const VAPID_PUBLIC = 'BMcZb5l5aEogdz6Q_RkxuZvVED3ty88cMIMgfusmbXUXkosDzmiPu5QtZB
 
 webpush.setVapidDetails('mailto:mt.mankowski@gmail.com', VAPID_PUBLIC, process.env.VAPID_PRIVATE_KEY)
 
-export default async function handler(req, res) {
-  // Protect cron endpoint
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).end()
+export default async (req) => {
+  if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 })
   }
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-  )
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
 
   const today = new Date()
   const tomorrow = new Date(today)
@@ -29,10 +25,9 @@ export default async function handler(req, res) {
     supabase.from('push_subscriptions').select('*'),
   ])
 
-  if (!subs?.length || !birthdays?.length) return res.json({ ok: true, sent: 0 })
+  if (!subs?.length || !birthdays?.length) return Response.json({ ok: true, sent: 0 })
 
   const notifications = []
-
   birthdays.forEach(b => {
     if (b.date === todayStr) {
       const age = b.year ? ` (${today.getFullYear() - b.year} lat)` : ''
@@ -59,9 +54,8 @@ export default async function handler(req, res) {
     )
     sent += results.filter(r => r.status === 'fulfilled').length
     subs.forEach((sub, i) => {
-      if (results[i].status === 'rejected' && results[i].reason?.statusCode === 410) {
+      if (results[i].status === 'rejected' && results[i].reason?.statusCode === 410)
         expired.push(sub.endpoint)
-      }
     })
   }
 
@@ -69,5 +63,7 @@ export default async function handler(req, res) {
     await supabase.from('push_subscriptions').delete().in('endpoint', [...new Set(expired)])
   }
 
-  res.json({ ok: true, sent, notifications: notifications.length })
+  return Response.json({ ok: true, sent, notifications: notifications.length })
 }
+
+export const config = { path: '/api/birthday-check' }
