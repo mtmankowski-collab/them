@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import Icon from '../components/Icon'
 import { PersonDot, Card, ScreenHead, EmptyState, SectionTitle, AddBtn, navBtn, navBtnSm, Sheet, Field, TextInput, PersonPicker, ChipPicker } from '../components/ui'
 import { Avatar } from '../components/ui'
@@ -523,25 +524,29 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
         )}
       </Sheet>
 
-      {/* Series delete dialog */}
-      {deleteSeriesOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '28px 20px 40px', width: '100%', maxWidth: 480 }}>
-            <div style={{ font: `600 17px/1.3 var(--font-sans)`, color: 'var(--ink)', marginBottom: 8 }}>Usuń wydarzenie cykliczne</div>
+      {/* Series delete dialog — rendered via portal above the Sheet */}
+      {deleteSeriesOpen && createPortal(
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10001, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          onClick={() => setDeleteSeriesOpen(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '28px 20px 44px', width: '100%', maxWidth: 480, animation: 'them-slideup .22s cubic-bezier(.2,.9,.3,1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ font: `600 17px/1.3 var(--font-sans)`, color: 'var(--ink)' }}>Usuń wydarzenie cykliczne</div>
+              <button onClick={() => setDeleteSeriesOpen(false)} style={{ background: 'var(--cream-warm)', border: '1px solid var(--line)', width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                <Icon name="close" size={15} color="var(--ink-2)" />
+              </button>
+            </div>
             <div style={{ font: `400 14px/1.5 var(--font-sans)`, color: 'var(--ink-2)', marginBottom: 24 }}>To wydarzenie jest częścią serii cotygodniowej. Co chcesz usunąć?</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button onClick={() => deleteEvent(false)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--line)', background: 'var(--surface)', font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', textAlign: 'left' }}>
                 Tylko to wydarzenie
               </button>
-              <button onClick={() => deleteEvent(true)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--danger, #e53935)', background: 'transparent', font: '500 15px/1 var(--font-sans)', color: 'var(--danger, #e53935)', cursor: 'pointer', textAlign: 'left' }}>
+              <button onClick={() => deleteEvent(true)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid #e53935', background: 'transparent', font: '500 15px/1 var(--font-sans)', color: '#e53935', cursor: 'pointer', textAlign: 'left' }}>
                 Całą serię (52 wydarzenia)
-              </button>
-              <button onClick={() => setDeleteSeriesOpen(false)} style={{ padding: '13px 20px', borderRadius: 'var(--r-md)', border: 'none', background: 'none', font: '500 14px/1 var(--font-sans)', color: 'var(--ink-3)', cursor: 'pointer' }}>
-                Anuluj
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Birthday edit sheet */}
