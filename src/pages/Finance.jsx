@@ -135,7 +135,9 @@ export default function Finance() {
   const grandTotal = totalExpenses + totalBills
 
   const spentA = expenses.filter(e => e.added_by === 'a').reduce((s,e) => s + e.amount, 0)
+             + bills.filter(b => (b.paid_by || 'a') === 'a').reduce((s,b) => s + (b.amount || 0), 0)
   const spentB = expenses.filter(e => e.added_by === 'b').reduce((s,e) => s + e.amount, 0)
+             + bills.filter(b => b.paid_by === 'b').reduce((s,b) => s + (b.amount || 0), 0)
   const splitTotal = spentA + spentB || 1
 
   // Category amounts: expenses + bills combined
