@@ -14,9 +14,9 @@ export default function Login({ onUnlock }) {
     setPin(next)
     if (next.length === 4) {
       setTimeout(async () => {
-        const ok = await verifyPin(next)
-        if (ok) {
-          onUnlock()
+        const token = await verifyPin(next)
+        if (token) {
+          onUnlock(token)
         } else {
           setShake(true)
           setTimeout(() => { setShake(false); setPin('') }, 450)

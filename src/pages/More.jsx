@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
 import { Avatar, Card, ScreenHead, SectionTitle, Sheet, Field, TextInput } from '../components/ui'
-import { supabase } from '../lib/supabase'
 import { requestNotificationPermission } from '../lib/notifications'
 import { subscribeToPush } from '../lib/push'
 import couplePhoto from '../assets/couple.jpg'
@@ -50,13 +49,14 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
     if (pinF.current.length !== 4) { setPinError('Aktualny PIN musi mieć 4 cyfry'); return }
     if (pinF.next.length !== 4) { setPinError('Nowy PIN musi mieć 4 cyfry'); return }
     if (pinF.next !== pinF.confirm) { setPinError('Nowe PINy nie są zgodne'); return }
-    // Verify current PIN
-    const { data } = await supabase.from('users').select('pin').limit(1).single()
-    const currentPin = data?.pin
-    if (!currentPin || pinF.current !== currentPin) { setPinError('Aktualny PIN jest nieprawidłowy'); return }
-    // Save new PIN
-    const { error } = await supabase.from('users').update({ pin: pinF.next }).eq('pin', currentPin)
-    if (error) { setPinError('Błąd zapisu — spróbuj ponownie'); return }
+    const token = sessionStorage.getItem('them_session_token')
+    const res = await fetch('/api/change-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-session-token': token || '' },
+      body: JSON.stringify({ currentPin: pinF.current, newPin: pinF.next }),
+    })
+    const result = await res.json()
+    if (!result.ok) { setPinError(result.error || 'Błąd zapisu — spróbuj ponownie'); return }
     setPinSuccess(true)
     setTimeout(() => setPinSheetOpen(false), 1200)
   }

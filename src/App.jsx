@@ -20,7 +20,7 @@ const MAIN_TABS = ['today','calendar','finance','films','more']
 const SUB_PAGES = ['chat','shopping','knowledge','places','trips','birthdays','inspo']
 
 export default function App() {
-  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem('them_unlocked') === '1')
+  const [unlocked, setUnlocked] = useState(() => !!sessionStorage.getItem('them_session_token'))
   const [page, setPage] = useState(() => {
     const params = new URLSearchParams(window.location.search)
     return params.get('date') ? 'calendar' : 'today'
@@ -68,15 +68,15 @@ export default function App() {
     supabase.from('inspirations').select('id', { count: 'exact' }).then(({ count }) => setInspoCount(count || 0))
   }, [unlocked])
 
-  function handleUnlock() {
-    sessionStorage.setItem('them_unlocked', '1')
+  function handleUnlock(token) {
+    sessionStorage.setItem('them_session_token', token)
     setUnlocked(true)
     // Request notification permission after unlock
     setTimeout(() => requestNotificationPermission(), 2000)
   }
 
   function handleLogout() {
-    sessionStorage.removeItem('them_unlocked')
+    sessionStorage.removeItem('them_session_token')
     setUnlocked(false)
     setPage('today')
     setSub(null)

@@ -1,3 +1,4 @@
+import { createHmac } from 'crypto'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 
@@ -5,11 +6,22 @@ const VAPID_PUBLIC = 'BMcZb5l5aEogdz6Q_RkxuZvVED3ty88cMIMgfusmbXUXkosDzmiPu5QtZB
 
 webpush.setVapidDetails('mailto:mt.mankowski@gmail.com', VAPID_PUBLIC, process.env.VAPID_PRIVATE_KEY)
 
+function verifyToken(token, secret) {
+  if (!token) return false
+  const [exp, sig] = token.split('.')
+  if (!exp || !sig) return false
+  if (parseInt(exp) < Math.floor(Date.now() / 1000)) return false
+  const expected = createHmac('sha256', secret).update(exp).digest('hex')
+  return sig === expected
+}
+
 export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 })
 
-  const token = req.headers.get('x-push-token')
-  if (!token || token !== process.env.NOTIFY_TOKEN) return new Response('Unauthorized', { status: 401 })
+  const token = req.headers.get('x-session-token')
+  if (!verifyToken(token, process.env.SESSION_SECRET)) {
+    return new Response('Unauthorized', { status: 401 })
+  }
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
 
