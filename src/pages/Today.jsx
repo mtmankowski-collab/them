@@ -28,7 +28,9 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
   useEffect(() => {
     const today = localDateStr(now)
     const todayMD = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}`
-    supabase.from('events').select('*').eq('date', today).order('time_start', { nullsFirst: true }).then(({ data }) => {
+    supabase.from('events').select('*')
+      .or(`date.eq.${today},and(date.lte.${today},date_end.gte.${today})`)
+      .order('time_start', { nullsFirst: true }).then(({ data }) => {
       supabase.from('birthdays').select('*').then(({ data: bdays }) => {
         const bdToday = (bdays || []).filter(b => b.date === todayMD).map(b => ({
           id: 'bd-' + b.id, title: `🎂 Urodziny: ${b.name}`, time_start: null, owner: 'birthday', isBirthday: true
