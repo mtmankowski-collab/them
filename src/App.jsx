@@ -65,7 +65,7 @@ export default function App() {
     supabase.from('knowledge').select('id', { count: 'exact' }).then(({ count }) => setKnowledgeCount(count || 0))
     supabase.from('places').select('id', { count: 'exact' }).then(({ count }) => setPlacesCount(count || 0))
     supabase.from('vacations').select('id', { count: 'exact' }).then(({ count }) => setTripsCount(count || 0))
-    try { setInspoCount((JSON.parse(localStorage.getItem('them_inspirations')) || []).length) } catch {}
+    supabase.from('inspirations').select('id', { count: 'exact' }).then(({ count }) => setInspoCount(count || 0))
   }, [unlocked])
 
   function handleUnlock() {

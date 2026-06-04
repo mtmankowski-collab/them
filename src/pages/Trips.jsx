@@ -7,12 +7,6 @@ const SERIF = "'Bodoni Moda', Georgia, serif"
 const ACCENTS = ['#C4703A', '#5E7459', '#8A6D3B', '#3E5C76']
 const PLACE_TYPES = ['Restauracja', 'Atrakcja', 'Nocleg', 'Inne']
 
-function getTripPlaces(tripId) {
-  try { return JSON.parse(localStorage.getItem(`them_trip_places_${tripId}`)) || [] } catch { return [] }
-}
-function setTripPlaces(tripId, places) {
-  localStorage.setItem(`them_trip_places_${tripId}`, JSON.stringify(places))
-}
 
 export default function Trips({ onBack }) {
   const [trips, setTrips] = useState([])
@@ -82,7 +76,6 @@ export default function Trips({ onBack }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {trips.map((t, ti) => {
             const accent = ACCENTS[ti % ACCENTS.length]
-            const places = getTripPlaces(t.id)
             return (
               <Card key={t.id} pad={0} style={{ overflow: 'hidden', cursor: 'pointer' }} onClick={() => setSelectedTrip(t)}>
                 <div style={{ display: 'flex', alignItems: 'stretch' }}>
@@ -91,11 +84,6 @@ export default function Trips({ onBack }) {
                     <div>
                       <div style={{ font: `500 20px/1 ${SERIF}`, color: 'var(--ink)' }}>{t.destination}</div>
                       {t.country && <div style={{ font: '400 13px/1 var(--font-sans)', color: 'var(--ink-2)', marginTop: 4 }}>{t.country}</div>}
-                      {places.length > 0 && (
-                        <div style={{ font: '400 12px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 6 }}>
-                          {places.length} {places.length === 1 ? 'miejsce' : 'miejsca/miejsc'}
-                        </div>
-                      )}
                     </div>
                     <Icon name="chevron" size={17} color="var(--ink-3)" />
                   </div>
@@ -125,15 +113,15 @@ export default function Trips({ onBack }) {
 }
 
 function TripDetail({ trip, onBack, onEdit }) {
-  const [places, setPlaces] = useState(() => getTripPlaces(trip.id))
+  const [places, setPlaces] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [f, setF] = useState({ name: '', type: 'Restauracja', notes: '', map_url: '' })
 
-  function saveAll(updated) {
-    setPlaces(updated)
-    setTripPlaces(trip.id, updated)
-  }
+  useEffect(() => {
+    supabase.from('trip_places').select('*').eq('trip_id', trip.id).order('created_at')
+      .then(({ data }) => setPlaces(data || []))
+  }, [trip.id])
 
   function openAdd() {
     setEditItem(null)
@@ -147,20 +135,27 @@ function TripDetail({ trip, onBack, onEdit }) {
     setAddOpen(true)
   }
 
-  function submit() {
+  async function submit() {
     if (!f.name.trim()) return
     if (editItem) {
-      saveAll(places.map(p => p.id === editItem.id ? { ...p, name: f.name.trim(), type: f.type, notes: f.notes.trim(), map_url: f.map_url.trim() } : p))
+      const { data } = await supabase.from('trip_places').update({
+        name: f.name.trim(), type: f.type, notes: f.notes.trim(), map_url: f.map_url.trim(),
+      }).eq('id', editItem.id).select().single()
+      if (data) setPlaces(prev => prev.map(p => p.id === editItem.id ? data : p))
     } else {
-      saveAll([...places, { id: Date.now(), name: f.name.trim(), type: f.type, notes: f.notes.trim(), map_url: f.map_url.trim() }])
+      const { data } = await supabase.from('trip_places').insert({
+        trip_id: trip.id, name: f.name.trim(), type: f.type, notes: f.notes.trim(), map_url: f.map_url.trim(),
+      }).select().single()
+      if (data) setPlaces(prev => [...prev, data])
     }
     setAddOpen(false)
     setEditItem(null)
   }
 
-  function deletePlace() {
+  async function deletePlace() {
     if (!editItem) return
-    saveAll(places.filter(p => p.id !== editItem.id))
+    await supabase.from('trip_places').delete().eq('id', editItem.id)
+    setPlaces(prev => prev.filter(p => p.id !== editItem.id))
     setAddOpen(false)
     setEditItem(null)
   }
