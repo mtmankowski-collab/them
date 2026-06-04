@@ -2,11 +2,15 @@
   "crons": [
     {
       "path": "/api/birthday-check",
-      "schedule": "0 7 * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/event-check",
-      "schedule": "0 7 * * *"
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/event-reminder",
+      "schedule": "0 * * * *"
     }
   ]
 }
