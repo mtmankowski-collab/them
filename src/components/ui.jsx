@@ -245,11 +245,11 @@ export function ChipPicker({ options, value, onChange }) {
   )
 }
 
-export function PersonPicker({ value, onChange }) {
+export function PersonPicker({ value, onChange, excludeShared }) {
   const opts = [
     { value: 'a', label: 'Maniek', dot: 'var(--a)' },
     { value: 'b', label: 'Ula', dot: 'var(--b)' },
-    { value: 'shared', label: 'Wspólne', dot: 'var(--shared)' },
+    ...(!excludeShared ? [{ value: 'shared', label: 'Wspólne', dot: 'var(--shared)' }] : []),
   ]
   return <ChipPicker options={opts} value={value} onChange={onChange} />
 }

@@ -4,9 +4,10 @@ import { Avatar, PersonDot, Label, Card, Segmented, ScreenHead, SectionTitle, Sh
 import { supabase } from '../lib/supabase'
 
 const SERIF = "'Bodoni Moda', Georgia, serif"
-const CATS = ['Jedzenie','Restauracje','Auto','Gaba','Kuba','Ubrania','Rozrywka','Inne']
-const CAT_COLORS = { Jedzenie:'var(--a)', Restauracje:'var(--a-deep)', Auto:'var(--b)', Gaba:'var(--ink)', Kuba:'var(--b-deep)', Ubrania:'var(--a-soft-2)', Rozrywka:'var(--ink-2)', Inne:'var(--ink-3)' }
-const CAT_ICON = { Jedzenie:'cart', Restauracje:'cup', Auto:'car', Gaba:'toy', Kuba:'toy', Ubrania:'tag', Rozrywka:'sparkle', Inne:'receipt' }
+const CATS = ['Jedzenie i dom','Restauracje','Auto','Dzieci','Ubrania','Rozrywka','Podróże','Inne']
+const CAT_COLORS = { 'Jedzenie i dom':'var(--a)', Restauracje:'var(--a-deep)', Auto:'var(--b)', Dzieci:'var(--ink)', Ubrania:'var(--a-soft-2)', Rozrywka:'var(--ink-2)', Podróże:'var(--b-deep)', Inne:'var(--ink-3)' }
+const CAT_ICON = { 'Jedzenie i dom':'cart', Restauracje:'cup', Auto:'car', Dzieci:'toy', Ubrania:'tag', Rozrywka:'sparkle', Podróże:'plane', Inne:'receipt' }
+const CAT_MERGE = { Jedzenie: 'Jedzenie i dom', Gaba: 'Dzieci', Kuba: 'Dzieci' }
 
 const MIN_MONTH = '2026-06'
 function monthKey(date) { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}` }
@@ -51,7 +52,7 @@ export default function Finance() {
   function openAdd() {
     setEditItem(null)
     setF(mode === 'expenses'
-      ? { title: '', amount: '', category: 'Jedzenie', added_by: 'a' }
+      ? { title: '', amount: '', category: 'Jedzenie i dom', added_by: 'a' }
       : { title: '', amount: '', due_day: '10' })
     setAddOpen(true)
   }
@@ -129,7 +130,10 @@ export default function Finance() {
   const grandTotal = totalSpent + totalBills
 
   const catAmounts = {}
-  expenses.forEach(e => { catAmounts[e.category] = (catAmounts[e.category] || 0) + e.amount })
+  expenses.forEach(e => {
+    const cat = CAT_MERGE[e.category] || e.category
+    catAmounts[cat] = (catAmounts[cat] || 0) + e.amount
+  })
 
   const isEditingExpense = editItem?._type === 'expense'
   const isEditingBill = editItem?._type === 'bill'
@@ -290,7 +294,7 @@ export default function Finance() {
           <Field label="Na co"><TextInput value={f.title||''} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Biedronka" /></Field>
           <Field label="Kwota"><TextInput value={f.amount||''} onChange={v => setF(p=>({...p,amount:v}))} type="number" placeholder="0,00" prefix="zł" /></Field>
           <Field label="Kategoria"><ChipPicker value={f.category||'Jedzenie'} onChange={v => setF(p=>({...p,category:v}))} options={CATS} /></Field>
-          <Field label="Kto płacił"><PersonPicker value={f.added_by||'a'} onChange={v => setF(p=>({...p,added_by:v}))} /></Field>
+          <Field label="Kto płacił"><PersonPicker excludeShared value={f.added_by||'a'} onChange={v => setF(p=>({...p,added_by:v}))} /></Field>
         </> : <>
           <Field label="Nazwa opłaty"><TextInput value={f.title||''} onChange={v => setF(p=>({...p,title:v}))} placeholder="np. Prąd" /></Field>
           <Field label="Kwota"><TextInput value={f.amount||''} onChange={v => setF(p=>({...p,amount:v}))} type="number" placeholder="0" prefix="zł" /></Field>
