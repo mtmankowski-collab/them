@@ -65,7 +65,8 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
   const [dayEvs, setDayEvs] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, multiDay: false, day: '', month: month, year: year, dateEnd: '', endDay: '', endMonth: month, endYear: year })
+  const [deleteSeriesOpen, setDeleteSeriesOpen] = useState(false)
+  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, multiDay: false, recurring: false, day: '', month: month, year: year, dateEnd: '', endDay: '', endMonth: month, endYear: year })
   const [bdEditOpen, setBdEditOpen] = useState(false)
   const [bdEditItem, setBdEditItem] = useState(null)
   const [bdF, setBdF] = useState({ name: '', day: '', month: 0, rel: 'Rodzina', year: '' })
@@ -163,6 +164,32 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
     if (editItem) {
       await supabase.from('events').update({ title: f.title, time_start: timeStart, location: f.location, owner: f.owner, date_end: dateEnd }).eq('id', editItem.id)
       setDayEvs(prev => prev.map(e => e.id === editItem.id ? { ...e, title: f.title, time_start: timeStart, location: f.location, owner: f.owner, date_end: dateEnd } : e))
+    } else if (f.recurring && !f.multiDay && !f.allDay) {
+      const seriesId = crypto.randomUUID()
+      const rows = []
+      for (let w = 0; w < 52; w++) {
+        const d = new Date(date + 'T12:00:00')
+        d.setDate(d.getDate() + w * 7)
+        rows.push({ title: f.title, date: d.toISOString().slice(0,10), time_start: timeStart, location: f.location, owner: f.owner, date_end: null, series_id: seriesId })
+      }
+      const { data: inserted } = await supabase.from('events').insert(rows).select()
+      if (inserted?.length) {
+        const selDate = `${year}-${String(month+1).padStart(2,'0')}-${String(sel).padStart(2,'0')}`
+        const selMonth = `${year}-${String(month+1).padStart(2,'0')}`
+        const newMarks = { ...marks }
+        inserted.forEach(ev => {
+          if (ev.date.startsWith(selMonth)) {
+            const d = parseInt(ev.date.split('-')[2])
+            if (!newMarks[d]) newMarks[d] = []
+            newMarks[d] = [...newMarks[d], { who: f.owner }]
+          }
+          if (ev.date === selDate) setDayEvs(prev => [...prev, ev].sort((a,b) => (a.time_start||'').localeCompare(b.time_start||'')))
+        })
+        setMarks(newMarks)
+        const timeLabel = f.time
+        notifyOther(`📅 Nowe wydarzenie`, `${f.title} · ${date} · ${timeLabel} (cykliczne)`, `/?date=${date}`)
+        scheduleUpcomingEventNotifications(inserted)
+      }
     } else {
       const { data } = await supabase.from('events').insert({ title: f.title, date, time_start: timeStart, location: f.location, owner: f.owner, date_end: dateEnd }).select().single()
       if (data) {
@@ -193,18 +220,37 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
     setAddOpen(true)
   }
 
-  async function deleteEvent() {
+  async function deleteEvent(deleteSeries = false) {
     if (!editItem) return
-    await supabase.from('events').delete().eq('id', editItem.id)
-    setDayEvs(prev => prev.filter(e => e.id !== editItem.id))
+    if (editItem.series_id && deleteSeries === 'ask') {
+      setDeleteSeriesOpen(true)
+      return
+    }
+    if (deleteSeries && editItem.series_id) {
+      await supabase.from('events').delete().eq('series_id', editItem.series_id)
+    } else {
+      await supabase.from('events').delete().eq('id', editItem.id)
+    }
+    setDayEvs(prev => prev.filter(e => deleteSeries && editItem.series_id ? e.series_id !== editItem.series_id : e.id !== editItem.id))
+    setDeleteSeriesOpen(false)
     setAddOpen(false)
     setEditItem(null)
     const from = `${year}-${String(month+1).padStart(2,'0')}-01`
     const to = `${year}-${String(month+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`
-    supabase.from('events').select('*').gte('date', from).lte('date', to).then(({ data }) => {
+    supabase.from('events').select('*').or(`date.gte.${from},date_end.gte.${from}`).lte('date', to).then(({ data }) => {
       if (!data) return
       const m = {}
-      data.forEach(e => { const d = parseInt(e.date.split('-')[2]); if (!m[d]) m[d] = []; m[d].push({ who: e.owner }) })
+      data.forEach(e => {
+        const start = new Date(e.date + 'T12:00:00')
+        const end = e.date_end ? new Date(e.date_end + 'T12:00:00') : start
+        for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+          if (cur.getFullYear() === year && cur.getMonth() === month) {
+            const d = cur.getDate()
+            if (!m[d]) m[d] = []
+            m[d].push({ who: e.owner })
+          }
+        }
+      })
       setMarks(m)
     })
   }
@@ -245,7 +291,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, multiDay: false, day: String(sel), month, year, dateEnd: '', endDay: String(sel), endMonth: month, endYear: year })
+    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, multiDay: false, recurring: false, day: String(sel), month, year, dateEnd: '', endDay: String(sel), endMonth: month, endYear: year })
     setAddOpen(true)
   }
 
@@ -370,7 +416,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
       <Sheet open={addOpen} title={editItem ? 'Edytuj wydarzenie' : 'Nowe wydarzenie'}
         onClose={() => { setAddOpen(false); setEditItem(null) }}
         onSubmit={submitEvent} submitLabel={editItem ? 'Zapisz zmiany' : 'Dodaj do kalendarza'}
-        onDelete={editItem ? deleteEvent : undefined}>
+        onDelete={editItem ? () => deleteEvent(editItem.series_id ? 'ask' : false) : undefined}>
         <Field label="Wydarzenie"><TextInput value={f.title} onChange={v => setF(p => ({...p, title: v}))} placeholder="np. Wizyta u lekarza" /></Field>
 
         {/* Toggles row */}
@@ -452,17 +498,51 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
         <Field label="Kto"><PersonPicker value={f.owner} onChange={v => setF(p => ({...p, owner: v}))} /></Field>
 
         {!editItem && (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '4px 0' }}>
-            <div onClick={() => setF(p => ({...p, isBirthday: !p.isBirthday}))}
-              style={{ width: 24, height: 24, borderRadius: 8, border: '1.8px solid ' + (f.isBirthday ? 'var(--star)' : 'var(--line-strong)'),
-                background: f.isBirthday ? 'var(--star)' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {f.isBirthday && <Icon name="check" size={15} color="#fff" stroke={2.2} />}
-            </div>
-            <div style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Dodaj jako urodziny</div>
-          </label>
+          <>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '4px 0' }}>
+              <div onClick={() => setF(p => ({...p, isBirthday: !p.isBirthday}))}
+                style={{ width: 24, height: 24, borderRadius: 8, border: '1.8px solid ' + (f.isBirthday ? 'var(--star)' : 'var(--line-strong)'),
+                  background: f.isBirthday ? 'var(--star)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {f.isBirthday && <Icon name="check" size={15} color="#fff" stroke={2.2} />}
+              </div>
+              <div style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Dodaj jako urodziny</div>
+            </label>
+            {!f.multiDay && !f.allDay && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '4px 0' }}>
+                <div onClick={() => setF(p => ({...p, recurring: !p.recurring}))}
+                  style={{ width: 24, height: 24, borderRadius: 8, border: '1.8px solid ' + (f.recurring ? 'var(--a)' : 'var(--line-strong)'),
+                    background: f.recurring ? 'var(--a)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {f.recurring && <Icon name="check" size={15} color="#fff" stroke={2.2} />}
+                </div>
+                <div style={{ font: '500 13.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Powtarzaj co tydzień</div>
+              </label>
+            )}
+          </>
         )}
       </Sheet>
+
+      {/* Series delete dialog */}
+      {deleteSeriesOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', padding: '28px 20px 40px', width: '100%', maxWidth: 480 }}>
+            <div style={{ font: `600 17px/1.3 var(--font-sans)`, color: 'var(--ink)', marginBottom: 8 }}>Usuń wydarzenie cykliczne</div>
+            <div style={{ font: `400 14px/1.5 var(--font-sans)`, color: 'var(--ink-2)', marginBottom: 24 }}>To wydarzenie jest częścią serii cotygodniowej. Co chcesz usunąć?</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button onClick={() => deleteEvent(false)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--line)', background: 'var(--surface)', font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', cursor: 'pointer', textAlign: 'left' }}>
+                Tylko to wydarzenie
+              </button>
+              <button onClick={() => deleteEvent(true)} style={{ padding: '15px 20px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--danger, #e53935)', background: 'transparent', font: '500 15px/1 var(--font-sans)', color: 'var(--danger, #e53935)', cursor: 'pointer', textAlign: 'left' }}>
+                Całą serię (52 wydarzenia)
+              </button>
+              <button onClick={() => setDeleteSeriesOpen(false)} style={{ padding: '13px 20px', borderRadius: 'var(--r-md)', border: 'none', background: 'none', font: '500 14px/1 var(--font-sans)', color: 'var(--ink-3)', cursor: 'pointer' }}>
+                Anuluj
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Birthday edit sheet */}
       <Sheet open={bdEditOpen} title="Edytuj urodziny" accent="#4A90D9"
