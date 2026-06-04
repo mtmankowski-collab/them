@@ -20,7 +20,7 @@ export default function Icon({ name, size = 22, stroke = 1.6, color = 'currentCo
     car:      <><path d="M4 16v-3.5L6 8h12l2 4.5V16M4 16h16M4 16v2M20 16v2" {...p} /><circle cx="8" cy="16" r="1.4" {...p} /><circle cx="16" cy="16" r="1.4" {...p} /></>,
     cup:      <><path d="M5 8h11v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z" {...p} /><path d="M16 9h2.5a1.5 1.5 0 0 1 0 5H16M8 3.5v1.5M11 3.5v1.5" {...p} /></>,
     cross:    <path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z" {...p} />,
-    toy:      <><circle cx="12" cy="9" r="4.5" {...p} /><path d="M12 13.5V20M8 20h8M9.5 8a2.5 2.5 0 0 1 5 0" {...p} /></>,
+    kids:     <><circle cx="9" cy="7" r="3" {...p} /><circle cx="16" cy="8" r="2.5" {...p} /><path d="M3 19c0-3.3 2.7-6 6-6s6 2.7 6 6" {...p} /><path d="M16 14c1.7.4 3 2 3 4" {...p} /></>,
     home:     <path d="M4 11l8-6 8 6M6 9.5V20h12V9.5" {...p} />,
     wifi:     <><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9 9 0 0 1 13 0M8.5 16a4.5 4.5 0 0 1 7 0" {...p} /><circle cx="12" cy="19" r=".6" fill={color} stroke="none" /></>,
     tv:       <><rect x="3" y="6" width="18" height="12" rx="2" {...p} /><path d="M8 21h8" {...p} /></>,

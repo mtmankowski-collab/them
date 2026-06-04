@@ -12,7 +12,7 @@ const CAT_COLORS = {
 }
 const CAT_ICON = {
   Jedzenie:'cart', Dom:'home', Restauracje:'cup', Samochody:'car',
-  Dzieci:'toy', Ubrania:'tag', Rozrywka:'sparkle', Podróże:'plane',
+  Dzieci:'kids', Ubrania:'tag', Rozrywka:'sparkle', Podróże:'plane',
   Streamingi:'tv', Inne:'receipt'
 }
 // Map old category names to new ones for display
