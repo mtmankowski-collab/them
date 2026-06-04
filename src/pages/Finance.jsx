@@ -125,6 +125,8 @@ export default function Finance() {
   const spentA = expenses.filter(e => e.added_by === 'a').reduce((s,e) => s + e.amount, 0)
   const spentB = expenses.filter(e => e.added_by === 'b').reduce((s,e) => s + e.amount, 0)
   const total = spentA + spentB || 1
+  const totalBills = bills.reduce((s,b) => s + (b.amount || 0), 0)
+  const grandTotal = totalSpent + totalBills
 
   const catAmounts = {}
   expenses.forEach(e => { catAmounts[e.category] = (catAmounts[e.category] || 0) + e.amount })
@@ -169,9 +171,21 @@ export default function Finance() {
           </div>
 
           <Card style={{ marginBottom: 16 }}>
-            <Label style={{ marginBottom: 8 }}>Wydano {isCurrentMonth ? 'w tym miesiącu' : monthLabel(expMonth).split(' ').slice(0,2).join(' ')}</Label>
-            <div style={{ font: `400 34px/1 ${SERIF}`, color: 'var(--ink)', marginBottom: 16 }}>
-              {totalSpent.toLocaleString('pl', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: 18, color: 'var(--ink-2)' }}>zł</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
+              <div>
+                <Label style={{ marginBottom: 8 }}>Wydano {isCurrentMonth ? 'w tym miesiącu' : monthLabel(expMonth).split(' ').slice(0,2).join(' ')}</Label>
+                <div style={{ font: `400 34px/1 ${SERIF}`, color: 'var(--ink)' }}>
+                  {totalSpent.toLocaleString('pl', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style={{ fontSize: 18, color: 'var(--ink-2)' }}>zł</span>
+                </div>
+              </div>
+              {isCurrentMonth && (
+                <div style={{ textAlign: 'right' }}>
+                  <Label style={{ marginBottom: 6 }}>Łącznie z opłatami</Label>
+                  <div style={{ font: `500 18px/1 ${SERIF}`, color: 'var(--ink-2)' }}>
+                    {grandTotal.toLocaleString('pl', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł
+                  </div>
+                </div>
+              )}
             </div>
             {totalSpent > 0 && <>
               <div style={{ height: 10, borderRadius: 5, overflow: 'hidden', display: 'flex', marginBottom: 14 }}>
