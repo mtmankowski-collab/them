@@ -20,6 +20,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
   const [bills, setBills] = useState([])
 
   const now = new Date()
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`
   const dayName = DAY_NAMES[now.getDay()]
   const dateLabel = `${dayName}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`
   const h = now.getHours()
@@ -42,11 +43,10 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
     supabase.from('board').select('*').order('created_at', { ascending: false }).limit(3).then(({ data }) => {
       if (data) setMsgs(data.reverse().map(m => ({ who: m.author, text: m.message, at: fmtTime(m.created_at) })))
     })
-    supabase.from('expenses').select('*').order('created_at', { ascending: false }).limit(50).then(({ data }) => setExpenses(data || []))
+    supabase.from('expenses').select('*').gte('created_at', `${curMonth}-01`).order('created_at', { ascending: false }).then(({ data }) => setExpenses(data || []))
     supabase.from('bills').select('*').order('due_day').then(({ data }) => setBills(data || []))
   }, [])
 
-  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`
   const totalSpent = expenses.reduce((s, e) => s + (e.amount || 0), 0)
   const totalDue = bills.filter(b => !(b.paid_months || []).includes(curMonth)).reduce((s, b) => s + (b.amount || 0), 0)
   const spentA = expenses.filter(e => e.added_by === 'a').reduce((s, e) => s + e.amount, 0)
