@@ -176,12 +176,14 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
         </div>
       </Card>
 
-      <div style={{ display: 'flex', alignItems: 'center', margin: '18px 2px 8px' }}>
-        <span style={{ flex: 1, font: '500 11px/1 var(--font-sans)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>Lista zakupów</span>
+      <div style={{ display: 'flex', alignItems: 'center', margin: '6px 2px 9px' }}>
+        <span style={{ flex: 1, font: '500 13px/1 var(--font-sans)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-2)' }}>Lista zakupów</span>
         <button onClick={() => setAddShopOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}>
-          <Icon name="plus" size={18} color="var(--ink-2)" />
+          <Icon name="plus" size={16} color="var(--a)" />
         </button>
-        <button onClick={onGoShopping} style={{ background: 'none', border: 'none', cursor: 'pointer', font: '500 12px/1 var(--font-sans)', color: 'var(--ink-2)', padding: '4px 0 4px 8px' }}>Wszystko</button>
+        <button onClick={onGoShopping} style={{ background: 'none', border: 'none', cursor: 'pointer', font: '500 12.5px/1 var(--font-sans)', color: 'var(--a)', padding: '4px 0 4px 6px', display: 'flex', alignItems: 'center', gap: 2 }}>
+          Wszystko<Icon name="chevron" size={14} color="var(--a)" />
+        </button>
       </div>
       <Card pad={14}>
         {shopping.length ? shopping.slice(0,5).map((s, i) => (

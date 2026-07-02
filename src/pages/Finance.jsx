@@ -131,23 +131,24 @@ export default function Finance() {
   const dueAmt = billsWithPaid.filter(b => !b.paid).reduce((s,b) => s + b.amount, 0)
   const sortedBills = [...billsWithPaid].sort((a,b) => a.paid - b.paid || (a.title||'').localeCompare(b.title||''))
 
+  const paidBills = billsWithPaid.filter(b => b.paid)
+
   const totalExpenses = expenses.reduce((s,e) => s + (e.amount || 0), 0)
-  const totalBills = bills.reduce((s,b) => s + (b.amount || 0), 0)
-  const grandTotal = totalExpenses + totalBills
+  const grandTotal = totalExpenses + paidAmt
 
   const spentA = expenses.filter(e => e.added_by === 'a').reduce((s,e) => s + e.amount, 0)
-             + bills.filter(b => (b.paid_by || 'a') === 'a').reduce((s,b) => s + (b.amount || 0), 0)
+             + paidBills.filter(b => (b.paid_by || 'a') === 'a').reduce((s,b) => s + (b.amount || 0), 0)
   const spentB = expenses.filter(e => e.added_by === 'b').reduce((s,e) => s + e.amount, 0)
-             + bills.filter(b => b.paid_by === 'b').reduce((s,b) => s + (b.amount || 0), 0)
+             + paidBills.filter(b => b.paid_by === 'b').reduce((s,b) => s + (b.amount || 0), 0)
   const splitTotal = spentA + spentB || 1
 
-  // Category amounts: expenses + bills combined
+  // Category amounts: expenses + paid bills only
   const catAmounts = {}
   expenses.forEach(e => {
     const cat = CAT_MERGE[e.category] || e.category || 'Inne'
     catAmounts[cat] = (catAmounts[cat] || 0) + e.amount
   })
-  bills.forEach(b => {
+  paidBills.forEach(b => {
     const cat = CAT_MERGE[b.category] || b.category || 'Inne'
     catAmounts[cat] = (catAmounts[cat] || 0) + (b.amount || 0)
   })
