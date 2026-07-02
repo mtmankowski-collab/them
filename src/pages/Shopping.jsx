@@ -70,7 +70,15 @@ export default function Shopping({ onBack }) {
       </button>
 
       {bought.length > 0 && <>
-        <SectionTitle title={`Kupione · ${bought.length}`} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '18px 2px 8px' }}>
+          <span style={{ font: '500 11px/1 var(--font-sans)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>Kupione · {bought.length}</span>
+          <button onClick={async () => {
+            await Promise.all(bought.map(s => supabase.from('shopping').delete().eq('id', s.id)))
+            setItems(prev => prev.filter(i => !i.done))
+          }} style={{ font: '500 12.5px/1 var(--font-sans)', color: 'var(--ink-3)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}>
+            Wyczyść
+          </button>
+        </div>
         <Card pad={0} style={{ opacity: 0.8 }}>
           {bought.map((s, i) => <Row key={s.id} s={s} onToggle={toggle} onRemove={remove} border={i > 0} />)}
         </Card>

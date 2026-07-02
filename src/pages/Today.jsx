@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
-import { Avatar, PersonDot, Label, Card, Segmented, SectionTitle } from '../components/ui'
+import { Avatar, PersonDot, Label, Card, Segmented, SectionTitle, Sheet, Field, TextInput, PersonPicker } from '../components/ui'
 import { supabase, personColor, PEOPLE } from '../lib/supabase'
+import { notifyOther } from '../lib/notify'
 
 const SERIF = "'Bodoni Moda', Georgia, serif"
 
@@ -18,6 +19,8 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
   const [msgs, setMsgs] = useState([])
   const [expenses, setExpenses] = useState([])
   const [bills, setBills] = useState([])
+  const [addShopOpen, setAddShopOpen] = useState(false)
+  const [shopF, setShopF] = useState({ name: '', added_by: 'a' })
 
   const now = new Date()
   const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`
@@ -58,6 +61,18 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
   const total = spentA + spentB || 1
   const pctA = Math.round(spentA / total * 100)
   const pctB = 100 - pctA
+
+  async function addShopItem() {
+    if (!shopF.name.trim()) return
+    const { data } = await supabase.from('shopping').insert({ title: shopF.name.trim(), done: false, added_by: shopF.added_by }).select().single()
+    if (data) {
+      setShopping(prev => [data, ...prev])
+      const who = shopF.added_by === 'a' ? 'Maniek' : 'Ula'
+      notifyOther('🛒 Nowy produkt na liście', `${who} dodał/a: ${shopF.name.trim()}`)
+    }
+    setAddShopOpen(false)
+    setShopF({ name: '', added_by: 'a' })
+  }
 
   const nextUp = events[0]
 
@@ -161,7 +176,13 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
         </div>
       </Card>
 
-      <SectionTitle title="Lista zakupów" action="Wszystko" onAction={onGoShopping} />
+      <div style={{ display: 'flex', alignItems: 'center', margin: '18px 2px 8px' }}>
+        <span style={{ flex: 1, font: '500 11px/1 var(--font-sans)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>Lista zakupów</span>
+        <button onClick={() => setAddShopOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 0 }}>
+          <Icon name="plus" size={18} color="var(--ink-2)" />
+        </button>
+        <button onClick={onGoShopping} style={{ background: 'none', border: 'none', cursor: 'pointer', font: '500 12px/1 var(--font-sans)', color: 'var(--ink-2)', padding: '4px 0 4px 8px' }}>Wszystko</button>
+      </div>
       <Card pad={14}>
         {shopping.length ? shopping.slice(0,5).map((s, i) => (
           <div key={s.id} style={{ display: 'flex', gap: 11, padding: '8px 0', alignItems: 'center',
@@ -174,6 +195,11 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
           <div style={{ padding: '8px 0', font: '400 13.5px/1 var(--font-sans)', color: 'var(--ink-3)' }}>Lista pusta 🎉</div>
         )}
       </Card>
+
+      <Sheet open={addShopOpen} title="Dodaj produkt" onClose={() => setAddShopOpen(false)} onSubmit={addShopItem} submitLabel="Dodaj do listy">
+        <Field label="Produkt"><TextInput value={shopF.name} onChange={v => setShopF(p=>({...p,name:v}))} placeholder="np. Mleko" /></Field>
+        <Field label="Kto dodaje"><PersonPicker value={shopF.added_by} onChange={v => setShopF(p=>({...p,added_by:v}))} /></Field>
+      </Sheet>
     </div>
   )
 }
