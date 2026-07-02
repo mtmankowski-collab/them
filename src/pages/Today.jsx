@@ -48,10 +48,13 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
     supabase.from('bills').select('*').order('due_day').then(({ data }) => setBills(data || []))
   }, [])
 
+  const billsPaid = bills.filter(b => (b.paid_months || []).includes(curMonth))
   const totalSpent = expenses.reduce((s, e) => s + (e.amount || 0), 0)
-  const totalDue = bills.filter(b => !(b.paid_months || []).includes(curMonth)).reduce((s, b) => s + (b.amount || 0), 0)
+                   + billsPaid.reduce((s, b) => s + (b.amount || 0), 0)
   const spentA = expenses.filter(e => e.added_by === 'a').reduce((s, e) => s + e.amount, 0)
+               + billsPaid.filter(b => (b.paid_by || 'a') === 'a').reduce((s, b) => s + (b.amount || 0), 0)
   const spentB = expenses.filter(e => e.added_by === 'b').reduce((s, e) => s + e.amount, 0)
+               + billsPaid.filter(b => b.paid_by === 'b').reduce((s, b) => s + (b.amount || 0), 0)
   const total = spentA + spentB || 1
   const pctA = Math.round(spentA / total * 100)
   const pctB = 100 - pctA

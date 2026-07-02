@@ -21,8 +21,9 @@ export default function Films() {
   const list = films.filter(m => tab === 'toWatch' ? m.status === 'to_watch' : m.status === 'watched')
 
   async function markWatched(film) {
-    await supabase.from('movies').update({ status: 'watched', rating: 0 }).eq('id', film.id)
-    setFilms(prev => prev.map(m => m.id === film.id ? { ...m, status: 'watched', rating: 0 } : m))
+    const { error } = await supabase.from('movies').update({ status: 'watched' }).eq('id', film.id)
+    if (error) { console.error('markWatched failed:', error); return }
+    setFilms(prev => prev.map(m => m.id === film.id ? { ...m, status: 'watched' } : m))
     setTab('watched')
   }
 
