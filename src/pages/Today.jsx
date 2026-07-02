@@ -43,7 +43,8 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
     supabase.from('board').select('*').order('created_at', { ascending: false }).limit(3).then(({ data }) => {
       if (data) setMsgs(data.reverse().map(m => ({ who: m.author, text: m.message, at: fmtTime(m.created_at) })))
     })
-    supabase.from('expenses').select('*').gte('created_at', `${curMonth}-01`).order('created_at', { ascending: false }).then(({ data }) => setExpenses(data || []))
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    supabase.from('expenses').select('*').gte('date', `${curMonth}-01`).lte('date', `${curMonth}-${String(lastDay).padStart(2,'0')}`).order('created_at', { ascending: false }).then(({ data }) => setExpenses(data || []))
     supabase.from('bills').select('*').order('due_day').then(({ data }) => setBills(data || []))
   }, [])
 

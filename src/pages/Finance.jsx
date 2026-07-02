@@ -121,12 +121,12 @@ export default function Finance() {
 
   async function toggleBillPaid(bill) {
     const paid = bill.paid_months || []
-    const newPaid = paid.includes(curMonth) ? paid.filter(m => m !== curMonth) : [...paid, curMonth]
+    const newPaid = paid.includes(expMonth) ? paid.filter(m => m !== expMonth) : [...paid, expMonth]
     await supabase.from('bills').update({ paid_months: newPaid }).eq('id', bill.id)
     setBills(prev => prev.map(b => b.id === bill.id ? { ...b, paid_months: newPaid } : b))
   }
 
-  const billsWithPaid = bills.map(b => ({ ...b, paid: (b.paid_months || []).includes(curMonth) }))
+  const billsWithPaid = bills.map(b => ({ ...b, paid: (b.paid_months || []).includes(expMonth) }))
   const paidAmt = billsWithPaid.filter(b => b.paid).reduce((s,b) => s + b.amount, 0)
   const dueAmt = billsWithPaid.filter(b => !b.paid).reduce((s,b) => s + b.amount, 0)
   const sortedBills = [...billsWithPaid].sort((a,b) => a.paid - b.paid || (a.title||'').localeCompare(b.title||''))

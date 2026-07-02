@@ -27,8 +27,8 @@ export default function Films() {
   }
 
   async function rate(id, val) {
-    await supabase.from('movies').update({ rating: val }).eq('id', id)
-    setFilms(prev => prev.map(m => m.id === id ? { ...m, rating: val } : m))
+    await supabase.from('movies').update({ rating: val, status: 'watched' }).eq('id', id)
+    setFilms(prev => prev.map(m => m.id === id ? { ...m, rating: val, status: 'watched' } : m))
   }
 
   function openAdd() {
