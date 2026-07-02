@@ -255,7 +255,7 @@ export default function Finance() {
           <div style={{ width: 1, background: 'var(--line)', margin: '0 16px' }} />
           <div style={{ flex: 1 }}>
             <Label style={{ marginBottom: 5 }}>Stałe opłaty</Label>
-            <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)' }}>{totalBills.toLocaleString('pl', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł</div>
+            <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)' }}>{paidAmt.toLocaleString('pl', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł</div>
           </div>
         </div>
         {grandTotal > 0 && <>
