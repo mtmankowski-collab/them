@@ -3,6 +3,7 @@ import Icon from '../components/Icon'
 import { Avatar, PersonDot, Label, Card, Segmented, SectionTitle, Sheet, Field, TextInput, PersonPicker } from '../components/ui'
 import { supabase, personColor, PEOPLE } from '../lib/supabase'
 import { notifyOther } from '../lib/notify'
+import { getWhoAmI } from '../lib/whoami'
 
 const SERIF = "'Bodoni Moda', Georgia, serif"
 
@@ -20,7 +21,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
   const [expenses, setExpenses] = useState([])
   const [bills, setBills] = useState([])
   const [addShopOpen, setAddShopOpen] = useState(false)
-  const [shopF, setShopF] = useState({ name: '', added_by: 'a' })
+  const [shopF, setShopF] = useState({ name: '', added_by: getWhoAmI() })
 
   const now = new Date()
   const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`
@@ -71,7 +72,7 @@ export default function Today({ onGoChat, onGoShopping, onGoFinance }) {
       notifyOther('🛒 Nowy produkt na liście', `${who} dodał/a: ${shopF.name.trim()}`)
     }
     setAddShopOpen(false)
-    setShopF({ name: '', added_by: 'a' })
+    setShopF({ name: '', added_by: getWhoAmI() })
   }
 
   const nextUp = events[0]

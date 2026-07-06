@@ -6,6 +6,7 @@ import { Avatar } from '../components/ui'
 import { supabase, personColor } from '../lib/supabase'
 import { scheduleUpcomingEventNotifications } from '../lib/notifications'
 import { notifyOther } from '../lib/notify'
+import { getWhoAmI } from '../lib/whoami'
 
 const DAYS = ['Pn','Wt','Śr','Cz','Pt','So','Nd']
 const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień']
@@ -67,7 +68,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [deleteSeriesOpen, setDeleteSeriesOpen] = useState(false)
-  const [f, setF] = useState({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, multiDay: false, recurring: false, day: '', month: month, year: year, dateEnd: '', endDay: '', endMonth: month, endYear: year })
+  const [f, setF] = useState({ title: '', time: '12:00', owner: getWhoAmI(), location: '', isBirthday: false, allDay: false, multiDay: false, recurring: false, day: '', month: month, year: year, dateEnd: '', endDay: '', endMonth: month, endYear: year })
   const [bdEditOpen, setBdEditOpen] = useState(false)
   const [bdEditItem, setBdEditItem] = useState(null)
   const [bdF, setBdF] = useState({ name: '', day: '', month: 0, rel: 'Rodzina', year: '' })
@@ -292,7 +293,7 @@ export default function Calendar({ onGoBirthdays, initialDate }) {
 
   function openAdd() {
     setEditItem(null)
-    setF({ title: '', time: '12:00', owner: 'shared', location: '', isBirthday: false, allDay: false, multiDay: false, recurring: false, day: String(sel), month, year, dateEnd: '', endDay: String(sel), endMonth: month, endYear: year })
+    setF({ title: '', time: '12:00', owner: getWhoAmI(), location: '', isBirthday: false, allDay: false, multiDay: false, recurring: false, day: String(sel), month, year, dateEnd: '', endDay: String(sel), endMonth: month, endYear: year })
     setAddOpen(true)
   }
 

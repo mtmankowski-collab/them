@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
 import { Avatar, PersonDot, Label, Card, Segmented, ScreenHead, SectionTitle, Sheet, Field, TextInput, ChipPicker, PersonPicker, navBtn } from '../components/ui'
 import { supabase } from '../lib/supabase'
+import { getWhoAmI } from '../lib/whoami'
 
 const SERIF = "'Bodoni Moda', Georgia, serif"
 const CATS = ['Jedzenie','Dom','Restauracje','Samochody','Dzieci','Ubrania','Rozrywka','Podróże','Streamingi','Inne']
@@ -63,8 +64,8 @@ export default function Finance() {
   function openAdd() {
     setEditItem(null)
     setF(mode === 'expenses'
-      ? { title: '', amount: '', category: 'Jedzenie', added_by: 'a' }
-      : { title: '', amount: '', category: 'Inne', paid_by: 'a' })
+      ? { title: '', amount: '', category: 'Jedzenie', added_by: getWhoAmI() }
+      : { title: '', amount: '', category: 'Inne', paid_by: getWhoAmI() })
     setAddOpen(true)
   }
 

@@ -3,11 +3,13 @@ import Icon from '../components/Icon'
 import { Avatar, Card, ScreenHead, SectionTitle, Sheet, Field, TextInput } from '../components/ui'
 import { requestNotificationPermission } from '../lib/notifications'
 import { subscribeToPush } from '../lib/push'
+import { getWhoAmI, setWhoAmI } from '../lib/whoami'
 import couplePhoto from '../assets/couple.jpg'
 
 const SERIF = "'Bodoni Moda', Georgia, serif"
 
 export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount, knowledgeCount, placesCount, tripsCount, inspoCount }) {
+  const [whoAmI, setWhoAmIState] = useState(() => getWhoAmI())
   const [pinSheetOpen, setPinSheetOpen] = useState(false)
   const [notifStatus, setNotifStatus] = useState(() => {
     if (!('Notification' in window)) return 'unsupported'
@@ -117,6 +119,25 @@ export default function More({ dark, onToggleDark, onLogout, onGo, shoppingCount
             </div>
           </div>
           {notifStatus === 'default' && <Icon name="chevron" size={18} color="var(--ink-3)" />}
+        </div>
+
+        {/* Who am I */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderTop: '1px solid var(--line)' }}>
+          <Icon name="home" size={20} color="var(--ink-2)" />
+          <div style={{ flex: 1 }}>
+            <div style={{ font: '500 14.5px/1 var(--font-sans)', color: 'var(--ink)' }}>Kto to ja?</div>
+            <div style={{ font: '400 11.5px/1 var(--font-sans)', color: 'var(--ink-3)', marginTop: 4 }}>Domyślny autor dodawanych treści</div>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[{ v: 'a', label: 'Maniek' }, { v: 'b', label: 'Ula' }].map(({ v, label }) => (
+              <button key={v} onClick={() => { setWhoAmI(v); setWhoAmIState(v) }}
+                style={{ padding: '7px 13px', borderRadius: 'var(--r-pill)', border: '1.5px solid ' + (whoAmI === v ? 'var(--ink)' : 'var(--line)'),
+                  background: whoAmI === v ? 'var(--ink)' : 'transparent', font: '500 12.5px/1 var(--font-sans)',
+                  color: whoAmI === v ? 'var(--cream)' : 'var(--ink-2)', cursor: 'pointer' }}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* PIN */}

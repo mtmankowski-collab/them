@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
 import { PersonDot, Card, ScreenHead, SectionTitle, navBtn, Sheet, Field, TextInput, PersonPicker } from '../components/ui'
 import { supabase } from '../lib/supabase'
+import { getWhoAmI } from '../lib/whoami'
 import { notifyNewShoppingItem } from '../lib/notifications'
 import { notifyOther } from '../lib/notify'
 
 export default function Shopping({ onBack }) {
   const [items, setItems] = useState([])
   const [addOpen, setAddOpen] = useState(false)
-  const [f, setF] = useState({ name: '', qty: '', added_by: 'a' })
+  const [f, setF] = useState({ name: '', qty: '', added_by: getWhoAmI() })
 
   useEffect(() => {
     supabase.from('shopping').select('*').order('created_at', { ascending: false }).then(({ data }) => setItems(data || []))
@@ -41,7 +42,7 @@ export default function Shopping({ onBack }) {
       notifyOther('🛒 Nowy produkt na liście', `${who} dodał/a: ${f.name.trim()}`)
     }
     setAddOpen(false)
-    setF({ name: '', qty: '', added_by: 'a' })
+    setF({ name: '', qty: '', added_by: getWhoAmI() })
   }
 
   const toBuy = items.filter(i => !i.done)
