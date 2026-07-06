@@ -76,7 +76,8 @@ export default function Finance() {
 
   function openEditBill(b) {
     setEditItem({ ...b, _type: 'bill' })
-    setF({ title: b.title, amount: String(b.amount || ''), category: b.category || 'Inne', paid_by: b.paid_by || 'a' })
+    const monthAmt = (b.amounts || {})[expMonth]
+    setF({ title: b.title, amount: String(monthAmt !== undefined ? monthAmt : (b.amount || '')), category: b.category || 'Inne', paid_by: b.paid_by || 'a' })
     setAddOpen(true)
   }
 
@@ -86,8 +87,9 @@ export default function Finance() {
       await supabase.from('expenses').update({ title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category, added_by: f.added_by }).eq('id', editItem.id)
       setExpenses(prev => prev.map(e => e.id === editItem.id ? { ...e, title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category, added_by: f.added_by } : e))
     } else if (editItem?._type === 'bill') {
-      await supabase.from('bills').update({ title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category, paid_by: f.paid_by }).eq('id', editItem.id)
-      setBills(prev => prev.map(b => b.id === editItem.id ? { ...b, title: f.title.trim(), amount: parseFloat(f.amount) || 0, category: f.category, paid_by: f.paid_by } : b))
+      const newAmounts = { ...(editItem.amounts || {}), [expMonth]: parseFloat(f.amount) || 0 }
+      await supabase.from('bills').update({ title: f.title.trim(), amounts: newAmounts, category: f.category, paid_by: f.paid_by }).eq('id', editItem.id)
+      setBills(prev => prev.map(b => b.id === editItem.id ? { ...b, title: f.title.trim(), amounts: newAmounts, category: f.category, paid_by: f.paid_by } : b))
     } else if (mode === 'expenses') {
       const { data } = await supabase.from('expenses').insert({
         title: f.title.trim(), amount: parseFloat(f.amount) || 0,
@@ -126,9 +128,10 @@ export default function Finance() {
     setBills(prev => prev.map(b => b.id === bill.id ? { ...b, paid_months: newPaid } : b))
   }
 
-  const billsWithPaid = bills.map(b => ({ ...b, paid: (b.paid_months || []).includes(expMonth) }))
-  const paidAmt = billsWithPaid.filter(b => b.paid).reduce((s,b) => s + b.amount, 0)
-  const dueAmt = billsWithPaid.filter(b => !b.paid).reduce((s,b) => s + b.amount, 0)
+  function billAmt(b) { return (b.amounts?.[expMonth]) ?? b.amount ?? 0 }
+  const billsWithPaid = bills.map(b => ({ ...b, paid: (b.paid_months || []).includes(expMonth), effectiveAmt: billAmt(b) }))
+  const paidAmt = billsWithPaid.filter(b => b.paid).reduce((s,b) => s + b.effectiveAmt, 0)
+  const dueAmt = billsWithPaid.filter(b => !b.paid).reduce((s,b) => s + b.effectiveAmt, 0)
   const sortedBills = [...billsWithPaid].sort((a,b) => a.paid - b.paid || (a.title||'').localeCompare(b.title||''))
 
   const paidBills = billsWithPaid.filter(b => b.paid)
@@ -137,9 +140,9 @@ export default function Finance() {
   const grandTotal = totalExpenses + paidAmt
 
   const spentA = expenses.filter(e => e.added_by === 'a').reduce((s,e) => s + e.amount, 0)
-             + paidBills.filter(b => (b.paid_by || 'a') === 'a').reduce((s,b) => s + (b.amount || 0), 0)
+             + paidBills.filter(b => (b.paid_by || 'a') === 'a').reduce((s,b) => s + b.effectiveAmt, 0)
   const spentB = expenses.filter(e => e.added_by === 'b').reduce((s,e) => s + e.amount, 0)
-             + paidBills.filter(b => b.paid_by === 'b').reduce((s,b) => s + (b.amount || 0), 0)
+             + paidBills.filter(b => b.paid_by === 'b').reduce((s,b) => s + b.effectiveAmt, 0)
   const splitTotal = spentA + spentB || 1
 
   // Category amounts: expenses + paid bills only
@@ -150,7 +153,7 @@ export default function Finance() {
   })
   paidBills.forEach(b => {
     const cat = CAT_MERGE[b.category] || b.category || 'Inne'
-    catAmounts[cat] = (catAmounts[cat] || 0) + (b.amount || 0)
+    catAmounts[cat] = (catAmounts[cat] || 0) + b.effectiveAmt
   })
 
   const isEditingExpense = editItem?._type === 'expense'
@@ -200,7 +203,7 @@ export default function Finance() {
                     </div>
                   </div>
                   <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', whiteSpace: 'nowrap' }}>
-                    {b.amount?.toLocaleString('pl')} zł
+                    {billAmt(b)?.toLocaleString('pl')} zł
                   </div>
                 </div>
               </Card>
@@ -370,7 +373,7 @@ export default function Finance() {
                       </div>
                     </div>
                     <div style={{ font: '500 15px/1 var(--font-sans)', color: 'var(--ink)', whiteSpace: 'nowrap' }}>
-                      {b.amount?.toLocaleString('pl')} zł
+                      {b.effectiveAmt?.toLocaleString('pl')} zł
                     </div>
                   </div>
                 </Card>
